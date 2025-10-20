@@ -1,0 +1,141 @@
+name: Laravel CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  pull_request:
+    branches:
+      - main
+      - master
+
+jobs:
+  # Job 1: Code Quality Checks
+  code-quality:
+    name: Code Quality & Formatting
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: mbstring, xml, ctype, iconv, intl, pdo, pdo_mysql, dom, filter, gd, json, bcmath
+          coverage: none
+
+      - name: Cache Composer dependencies
+        uses: actions/cache@v3
+        with:
+          path: vendor
+          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-composer-
+
+      - name: Install Composer dependencies
+        run: composer install --prefer-dist --no-interaction --no-progress --optimize-autoloader
+
+      - name: Copy .env.example to .env
+        run: cp .env.example .env || echo "No .env.example found"
+
+      - name: Generate application key
+        run: php artisan key:generate
+
+      - name: Run Laravel Pint (Code Style Check)
+        run: ./vendor/bin/pint --test
+        continue-on-error: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Cache Node dependencies
+        uses: actions/cache@v3
+        with:
+          path: node_modules
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+
+      - name: Install Node dependencies
+        run: npm ci || npm install
+
+      - name: Check Blade Formatter
+        run: |
+          npm install --save-dev blade-formatter
+          npx blade-formatter --check resources/views/**/*.blade.php
+        continue-on-error: false
+
+      - name: Run PHPUnit Tests (if exists)
+        run: |
+          if [ -f "phpunit.xml" ]; then
+            php artisan test
+          else
+            echo "No tests found"
+          fi
+        continue-on-error: true
+
+  # Job 2: Deploy to VPS (only on push to main/master)
+  deploy:
+    name: Deploy to VPS
+    needs: code-quality
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy to VPS via SSH
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USERNAME }}
+          password: ${{ secrets.VPS_PASSWORD }}
+          port: ${{ secrets.VPS_PORT || 22 }}
+          script_stop: true
+          script: |
+            echo "🚀 Starting deployment..."
+            
+            # Navigate to project directory
+            cd ${{ secrets.VPS_PROJECT_PATH }}
+            
+            echo "📦 Pulling latest changes from Git..."
+            git fetch origin
+            git reset --hard origin/${{ github.ref_name }}
+            
+            echo "📥 Installing Composer dependencies..."
+            composer install --no-dev --optimize-autoloader --no-interaction
+            
+            echo "📥 Installing Node dependencies..."
+            npm ci --production || npm install --production
+            
+            echo "🔨 Building assets..."
+            npm run build
+            
+            echo "⚙️ Running Laravel optimizations..."
+            php artisan config:cache
+            php artisan route:cache
+            php artisan view:cache
+            
+            echo "🗄️ Running database migrations..."
+            php artisan migrate --force
+            
+            echo "🧹 Clearing caches..."
+            php artisan cache:clear
+            php artisan optimize:clear
+            
+            echo "✅ Deployment completed successfully!"
+
+      - name: Deployment Status Notification
+        if: always()
+        run: |
+          if [ "${{ job.status }}" == "success" ]; then
+            echo "✅ Deployment successful!"
+          else
+            echo "❌ Deployment failed!"
+          fi
