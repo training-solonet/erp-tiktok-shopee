@@ -4,11 +4,9 @@ on:
   push:
     branches:
       - main
-      - master
   pull_request:
     branches:
       - main
-      - master
 
 jobs:
   # Job 1: Code Quality Checks
@@ -84,7 +82,7 @@ jobs:
     name: Deploy to VPS
     needs: code-quality
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     
     steps:
       - name: Checkout code
@@ -93,16 +91,16 @@ jobs:
       - name: Deploy to VPS via SSH
         uses: appleboy/ssh-action@v1.0.0
         with:
-          host: ${{ secrets.VPS_HOST }}
-          username: ${{ secrets.VPS_USERNAME }}
-          password: ${{ secrets.VPS_PASSWORD }}
-          port: ${{ secrets.VPS_PORT || 22 }}
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USERNAME }}
+          password: ${{ secrets.PASSWORD }}
+          port: ${{ secrets.PORT || 22 }}
           script_stop: true
           script: |
             echo "🚀 Starting deployment..."
             
             # Navigate to project directory
-            cd ${{ secrets.VPS_PROJECT_PATH }}
+            cd ${{ secrets.PROJECT_PATH }}
             
             echo "📦 Pulling latest changes from Git..."
             git fetch origin
