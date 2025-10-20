@@ -97,12 +97,3 @@ jobs:
             php artisan optimize:clear
             
             echo "✅ Deployment completed successfully!"
-
-      - name: Deployment Status Notification
-        if: always()
-        run: |
-          if [ "${{ job.status }}" == "success" ]; then
-            echo "✅ Deployment successful!"
-          else
-            echo "❌ Deployment failed!"
-          fi
