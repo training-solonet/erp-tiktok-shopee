@@ -13,9 +13,9 @@ class CallbackController extends Controller
         $authCode = $request->get('code');
         $state = $request->get('state');
 
-        if (!$authCode) {
+        if (! $authCode) {
             return response()->json([
-                'message' => 'Auth code not provided'
+                'message' => 'Auth code not provided',
             ], 400);
         }
 
