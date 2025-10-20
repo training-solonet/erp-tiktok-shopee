@@ -79,7 +79,7 @@ jobs:
             composer install --no-dev --optimize-autoloader --no-interaction
             
             echo "📥 Installing Node dependencies..."
-            npm ci --production || npm install --production
+            npm i
             
             echo "🔨 Building assets..."
             npm run build
