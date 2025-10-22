@@ -28,7 +28,7 @@ class ProductController extends Controller
             }
 
             // Prepare request
-            $path = '/product/202309/products/search';
+            $path = '/product/202502/products/search';
             $bodyArray = [
                 'status' => 'ACTIVATE',
                 'listing_quality_tier' => 'GOOD',
@@ -62,12 +62,13 @@ class ProductController extends Controller
 
             if ($response->successful()) {
                 $data = $response->json();
+                // return $response;
 
                 // Check TikTok response code
                 if (isset($data['code']) && $data['code'] === 0) {
                     $products = $data['data']['products'] ?? [];
 
-                    return view('products.index', [
+                    return view('pages.products', [
                         'products' => $products,
                         'total' => $data['data']['total'] ?? 0,
                         'success' => true,
@@ -75,7 +76,7 @@ class ProductController extends Controller
                 }
 
                 // TikTok API error
-                return view('products.index', [
+                return view('pages.products', [
                     'products' => [],
                     'error' => $data['message'] ?? 'Unknown error from TikTok API',
                     'success' => false,
@@ -83,14 +84,14 @@ class ProductController extends Controller
             }
 
             // HTTP error
-            return view('products.index', [
+            return view('pages.products', [
                 'products' => [],
                 'error' => 'Failed to fetch products: ' . $response->body(),
                 'success' => false,
             ]);
 
         } catch (Exception $e) {
-            return view('products.index', [
+            return view('pages.products', [
                 'products' => [],
                 'error' => $e->getMessage(),
                 'success' => false,
