@@ -35,7 +35,7 @@
         <div class="p-6 h-full flex flex-col">
             <!-- Logo Section -->
             <div class="mb-8">
-                <h1 class="text-xl font-display font-bold text-primary">Butik Solo Jala Buana</h1>
+                <h1 class="text-xl font-display font-bold text-primary">Camellia Boutique99</h1>
                 <p class="text-xs text-gray-600 mt-1">ERP Management System</p>
             </div>
             
@@ -43,39 +43,28 @@
             <ul class="space-y-2 flex-1">
                 <li>
                     <a href="{{ route('dashboard_menu') }}" 
-                       class="nav-item flex items-center px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg transition-all duration-300 {{ request()->routeIs('dashboard') ? 'active' : '' }}">
+                       class="nav-item flex items-center px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg transition-all duration-300"
+                       data-route="dashboard">
                        <i class='bx bx-home text-lg mr-3'></i>
                        <span class="font-medium">Dashboard</span>
                     </a>
                 </li>
                 <li>
                     <a href="{{ route('products_menu') }}" 
-                       class="nav-item flex items-center px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg transition-all duration-300 {{ request()->routeIs('products.*') ? 'active' : '' }}">
+                       class="nav-item flex items-center px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg transition-all duration-300"
+                       data-route="products">
                        <i class='bx bx-package text-lg mr-3'></i>
                        <span class="font-medium">Products</span>
                     </a>
                 </li>
                 <li>
                     <a href="{{ route('orders_menu') }}" 
-                       class="nav-item flex items-center px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg transition-all duration-300 {{ request()->routeIs('orders.*') ? 'active' : '' }}">
+                       class="nav-item flex items-center px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg transition-all duration-300"
+                       data-route="orders">
                        <i class='bx bx-cart-alt text-lg mr-3'></i>
                        <span class="font-medium">Orders</span>
                     </a>
                 </li>
-                {{-- <li>
-                    <a href="#" 
-                       class="nav-item flex items-center px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg transition-all duration-300">
-                       <i class='bx bx-bar-chart text-lg mr-3'></i>
-                       <span class="font-medium">Analytics</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="#" 
-                       class="nav-item flex items-center px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg transition-all duration-300">
-                       <i class='bx bx-cog text-lg mr-3'></i>
-                       <span class="font-medium">Settings</span>
-                    </a>
-                </li> --}}
             </ul>
             
             <!-- User Section -->
@@ -133,17 +122,47 @@
             // Handle active state based on current URL
             function setActiveNav() {
                 const currentPath = window.location.pathname;
+                const currentHash = window.location.hash;
+                
+                console.log('Current Path:', currentPath);
+                console.log('Current Hash:', currentHash);
+                
+                // Reset semua active state
                 navItems.forEach(item => {
-                    const href = item.getAttribute('href');
-                    if (href && currentPath.includes(href.replace('{{ url('') }}', ''))) {
-                        item.classList.add('active');
-                    } else {
-                        item.classList.remove('active');
-                    }
+                    item.classList.remove('active');
                 });
+                
+                // Logic untuk menentukan menu aktif
+                if (currentPath.includes('/products') || currentHash === '#products') {
+                    // Products page
+                    document.querySelector('[data-route="products"]').classList.add('active');
+                    console.log('Setting active: Products');
+                } else if (currentPath.includes('/orders') || currentHash === '#orders') {
+                    // Orders page  
+                    document.querySelector('[data-route="orders"]').classList.add('active');
+                    console.log('Setting active: Orders');
+                } else if (currentPath.includes('/dashboard') || currentPath === '/' || currentHash === '#dashboard' || currentHash === '') {
+                    // Dashboard page (default)
+                    document.querySelector('[data-route="dashboard"]').classList.add('active');
+                    console.log('Setting active: Dashboard');
+                }
+                
+                // Fallback: Jika tidak ada yang match, set dashboard sebagai default
+                const activeItems = document.querySelectorAll('.nav-item.active');
+                if (activeItems.length === 0) {
+                    document.querySelector('[data-route="dashboard"]').classList.add('active');
+                    console.log('Fallback: Setting active: Dashboard');
+                }
             }
 
+            // Panggil function saat load
             setActiveNav();
+            
+            // Juga panggil saat URL berubah (untuk single page application behavior)
+            window.addEventListener('popstate', setActiveNav);
+            
+            // Untuk handle hash changes
+            window.addEventListener('hashchange', setActiveNav);
         });
     </script>
     

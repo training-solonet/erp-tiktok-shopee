@@ -1,9 +1,10 @@
 <?php
 
-use App\Http\Controllers\Api\CallbackController;
+use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\ProductController;
-use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\Api\CallbackController;
 
 Route::get('/', function () {
     return redirect('/products');
@@ -37,7 +38,5 @@ Route::get('/orders', function(){
     return view('pages.orders');
 })->name('orders_menu');
 
-Route::get('/dashboard', function(){
-    return view('pages.dashboard');
-})->name('dashboard_menu');
+Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard_menu');
 

@@ -62,17 +62,19 @@ class ProductController extends Controller
 
             if ($response->successful()) {
                 $data = $response->json();
-                // return $response;
 
                 // Check TikTok response code
                 if (isset($data['code']) && $data['code'] === 0) {
                     $products = $data['data']['products'] ?? [];
+                    
+                    // Calculate product metrics
+                    $productMetrics = $this->calculateProductMetrics($products);
 
-                    return view('pages.products', [
+                    return view('pages.products', array_merge($productMetrics, [
                         'products' => $products,
                         'total' => $data['data']['total'] ?? 0,
                         'success' => true,
-                    ]);
+                    ]));
                 }
 
                 // TikTok API error
@@ -98,6 +100,129 @@ class ProductController extends Controller
             ]);
         }
     }
+
+    /**
+     * Calculate product metrics from products data
+     */
+    private function calculateProductMetrics($products)
+    {
+        $totalProducts = count($products);
+        $totalStock = 0;
+        $activeProducts = 0;
+        $inventoryValue = 0;
+
+        foreach ($products as $product) {
+            $productStock = 0;
+            $productPrice = 0;
+            
+            // Calculate stock and price from SKUs
+            if(isset($product['skus']) && is_array($product['skus'])) {
+                foreach($product['skus'] as $sku) {
+                    if(isset($sku['inventory']) && is_array($sku['inventory'])) {
+                        foreach($sku['inventory'] as $inv) {
+                            $productStock += $inv['quantity'] ?? 0;
+                        }
+                    }
+                    if(isset($sku['price']['tax_exclusive_price'])) {
+                        $productPrice = (int)$sku['price']['tax_exclusive_price'];
+                    }
+                }
+            }
+            
+            $totalStock += $productStock;
+            $inventoryValue += $productPrice * $productStock;
+            
+            // Count active products
+            if(($product['status'] ?? '') === 'ACTIVATE') {
+                $activeProducts++;
+            }
+        }
+
+        return [
+            'total_products' => $totalProducts,
+            'total_stock' => $totalStock,
+            'active_products' => $activeProducts,
+            'inventory_value' => $inventoryValue,
+        ];
+    }
+
+    /**
+     * Get product metrics for dashboard (new method)
+     */
+    public function getProductMetrics()
+    {
+        try {
+            // Get access token dari helper
+            $accessToken = Authtentication::getTikTokAccessToken();
+
+            // Ambil parameter dari database
+            $appKey = Setting::where('key', 'tiktok-app-key')->first();
+            $shopCipher = Setting::where('key', 'tiktok-shop-cipher')->first();
+
+            if (! $appKey || ! $shopCipher) {
+                throw new Exception('TikTok credentials not complete in settings');
+            }
+
+            // Prepare request
+            $path = '/product/202502/products/search';
+            $bodyArray = [
+                'status' => 'ACTIVATE',
+                'listing_quality_tier' => 'GOOD',
+            ];
+
+            // Prepare query parameters
+            $params = [
+                'app_key' => $appKey->value,
+                'shop_cipher' => $shopCipher->value,
+                'page_size' => 100,
+            ];
+
+            // Generate signature
+            $signData = Authtentication::generateTikTokSignature($path, $params, json_encode($bodyArray));
+            $params['sign'] = $signData['sign'];
+            $params['timestamp'] = $signData['timestamp'];
+
+            // Build full URL
+            $url = 'https://open-api.tiktokglobalshop.com' . $path;
+
+            // Hit TikTok API
+            $response = Http::asJson()
+                ->withHeaders([
+                    'x-tts-access-token' => $accessToken,
+                ])
+                ->withQueryParameters($params)
+                ->post($url, $bodyArray);
+
+            if ($response->successful()) {
+                $data = $response->json();
+
+                if (isset($data['code']) && $data['code'] === 0) {
+                    $products = $data['data']['products'] ?? [];
+                    $productMetrics = $this->calculateProductMetrics($products);
+                    
+                    return $productMetrics;
+                }
+            }
+
+            // Return default values if API fails
+            return [
+                'total_products' => 0,
+                'total_stock' => 0,
+                'active_products' => 0,
+                'inventory_value' => 0,
+            ];
+
+        } catch (Exception $e) {
+            // Return default values on error
+            return [
+                'total_products' => 0,
+                'total_stock' => 0,
+                'active_products' => 0,
+                'inventory_value' => 0,
+            ];
+        }
+    }
+    // ... method lainnya tetap sama
 
     /**
      * Show the form for creating a new resource.
