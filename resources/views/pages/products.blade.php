@@ -349,7 +349,7 @@
                                 <button class="flex-1 bg-amber-600 hover:bg-amber-700 text-white py-2.5 rounded-lg font-medium transition-all duration-200 hover:shadow-md flex items-center justify-center text-sm edit-product-btn"
                                         data-product-id="{{ $product['id'] ?? '' }}">
                                     <i class='bx bx-edit mr-1.5'></i>
-                                    Edit
+                                    <a href="#">Cek Produk</a>
                                 </button>
                                 <button class="w-12 h-12 border border-gray-300 hover:border-amber-400 hover:bg-amber-50 rounded-lg flex items-center justify-center transition-all duration-200 group/action">
                                     <i class='bx bx-dots-vertical-rounded text-gray-600 group-hover/action:text-amber-600'></i>
