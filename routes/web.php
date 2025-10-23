@@ -1,15 +1,14 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Api\CallbackController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\ProductController;
-use App\Http\Controllers\DashboardController;
-use App\Http\Controllers\Api\CallbackController;
+use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
     return redirect('/products');
 })->name('products_menu');
-
 
 // Route::get('dashboard', function(){
 //     return view('dashboard');
@@ -34,9 +33,8 @@ Route::middleware([
 //     return view('pages.products');
 // })->name('products_menu');
 
-Route::get('/orders', function(){
+Route::get('/orders', function () {
     return view('pages.orders');
 })->name('orders_menu');
 
 Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard_menu');
-

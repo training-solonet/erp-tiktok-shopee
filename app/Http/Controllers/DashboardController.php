@@ -2,16 +2,13 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Controllers\ProductController;
-use Illuminate\Http\Request;
-
 class DashboardController extends Controller
 {
     protected $productController;
 
     public function __construct()
     {
-        $this->productController = new ProductController();
+        $this->productController = new ProductController;
     }
 
     public function index()
@@ -29,13 +26,13 @@ class DashboardController extends Controller
             'total_stock' => $productMetrics['total_stock'],
             'active_products' => $productMetrics['active_products'],
             'inventory_value' => $productMetrics['inventory_value'],
-            
+
             // Order metrics (dummy data for now)
             'active_orders' => $orderMetrics['active_orders'],
             'pending_shipment' => $orderMetrics['pending_shipment'],
             'monthly_revenue' => $orderMetrics['monthly_revenue'],
             'total_revenue' => $orderMetrics['total_revenue'],
-            
+
             // Recent orders for display
             'recent_orders' => collect($dummyOrders)->take(5),
         ]));
@@ -52,43 +49,43 @@ class DashboardController extends Controller
                 'recipient_address' => ['name' => 'Sarah Wijaya'],
                 'payment' => ['total_amount' => rand(200000, 1000000)],
                 'status' => 'completed',
-                'create_time' => time() - rand(3600, 86400)
+                'create_time' => time() - rand(3600, 86400),
             ],
             [
                 'id' => 'ORD-' . rand(1000, 9999),
                 'recipient_address' => ['name' => 'Budi Santoso'],
                 'payment' => ['total_amount' => rand(200000, 1000000)],
                 'status' => 'processing',
-                'create_time' => time() - rand(3600, 86400)
+                'create_time' => time() - rand(3600, 86400),
             ],
             [
                 'id' => 'ORD-' . rand(1000, 9999),
                 'recipient_address' => ['name' => 'Maya Sari'],
                 'payment' => ['total_amount' => rand(200000, 1000000)],
                 'status' => 'pending',
-                'create_time' => time() - rand(3600, 86400)
+                'create_time' => time() - rand(3600, 86400),
             ],
             [
                 'id' => 'ORD-' . rand(1000, 9999),
                 'recipient_address' => ['name' => 'Rizki Pratama'],
                 'payment' => ['total_amount' => rand(200000, 1000000)],
                 'status' => 'completed',
-                'create_time' => time() - rand(3600, 86400)
+                'create_time' => time() - rand(3600, 86400),
             ],
             [
                 'id' => 'ORD-' . rand(1000, 9999),
                 'recipient_address' => ['name' => 'Dewi Anggraini'],
                 'payment' => ['total_amount' => rand(200000, 1000000)],
                 'status' => 'processing',
-                'create_time' => time() - rand(3600, 86400)
+                'create_time' => time() - rand(3600, 86400),
             ],
             [
                 'id' => 'ORD-' . rand(1000, 9999),
                 'recipient_address' => ['name' => 'Ahmad Fauzi'],
                 'payment' => ['total_amount' => rand(200000, 1000000)],
                 'status' => 'pending',
-                'create_time' => time() - rand(3600, 86400)
-            ]
+                'create_time' => time() - rand(3600, 86400),
+            ],
         ];
     }
 
@@ -104,17 +101,17 @@ class DashboardController extends Controller
         foreach ($orders as $order) {
             $status = $order['status'] ?? '';
             $totalAmount = $order['payment']['total_amount'] ?? 0;
-            
+
             // Count active orders (pending and processing)
             if (in_array($status, ['pending', 'processing'])) {
                 $activeOrders++;
             }
-            
+
             // Count pending shipment
             if ($status === 'pending') {
                 $pendingShipment++;
             }
-            
+
             // Calculate total revenue from completed orders
             if ($status === 'completed') {
                 $totalRevenue += $totalAmount;

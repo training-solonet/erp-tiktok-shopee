@@ -18,10 +18,10 @@ class OrderController extends Controller
             $appKey = Setting::where('key', 'tiktok-app-key')->first();
             $shopCipher = Setting::where('key', 'tiktok-shop-cipher')->first();
 
-            if (!$appKey || !$shopCipher) {
+            if (! $appKey || ! $shopCipher) {
                 Log::error('TikTok credentials missing', [
                     'app_key' => $appKey ? 'exists' : 'missing',
-                    'shop_cipher' => $shopCipher ? 'exists' : 'missing'
+                    'shop_cipher' => $shopCipher ? 'exists' : 'missing',
                 ]);
                 throw new Exception('TikTok credentials not complete in settings');
             }
@@ -48,7 +48,7 @@ class OrderController extends Controller
             Log::info('TikTok API Request', [
                 'url' => $url,
                 'params' => $params,
-                'body' => $bodyArray
+                'body' => $bodyArray,
             ]);
 
             $response = Http::timeout(30)
@@ -62,7 +62,7 @@ class OrderController extends Controller
 
             Log::info('TikTok API Response', [
                 'status' => $response->status(),
-                'body' => $response->body()
+                'body' => $response->body(),
             ]);
 
             if ($response->successful()) {
@@ -70,10 +70,10 @@ class OrderController extends Controller
 
                 if (isset($data['code']) && $data['code'] === 0) {
                     $orders = $data['data']['orders'] ?? [];
-                    
+
                     Log::info('Orders fetched successfully', [
                         'count' => count($orders),
-                        'total_count' => $data['data']['total_count'] ?? 0
+                        'total_count' => $data['data']['total_count'] ?? 0,
                     ]);
 
                     return view('pages.orders', [
@@ -85,7 +85,7 @@ class OrderController extends Controller
 
                 Log::error('TikTok API error', [
                     'code' => $data['code'] ?? 'unknown',
-                    'message' => $data['message'] ?? 'No message'
+                    'message' => $data['message'] ?? 'No message',
                 ]);
 
                 return view('pages.orders', [
@@ -97,7 +97,7 @@ class OrderController extends Controller
 
             Log::error('HTTP request failed', [
                 'status' => $response->status(),
-                'body' => $response->body()
+                'body' => $response->body(),
             ]);
 
             return view('pages.orders', [
@@ -110,7 +110,7 @@ class OrderController extends Controller
             Log::error('OrderController exception', [
                 'message' => $e->getMessage(),
                 'file' => $e->getFile(),
-                'line' => $e->getLine()
+                'line' => $e->getLine(),
             ]);
 
             return view('pages.orders', [
@@ -120,9 +120,6 @@ class OrderController extends Controller
             ]);
         }
     }
-
-
-    
 
     /**
      * Show the form for creating a new resource.

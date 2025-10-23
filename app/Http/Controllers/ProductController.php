@@ -66,7 +66,7 @@ class ProductController extends Controller
                 // Check TikTok response code
                 if (isset($data['code']) && $data['code'] === 0) {
                     $products = $data['data']['products'] ?? [];
-                    
+
                     // Calculate product metrics
                     $productMetrics = $this->calculateProductMetrics($products);
 
@@ -114,26 +114,26 @@ class ProductController extends Controller
         foreach ($products as $product) {
             $productStock = 0;
             $productPrice = 0;
-            
+
             // Calculate stock and price from SKUs
-            if(isset($product['skus']) && is_array($product['skus'])) {
-                foreach($product['skus'] as $sku) {
-                    if(isset($sku['inventory']) && is_array($sku['inventory'])) {
-                        foreach($sku['inventory'] as $inv) {
+            if (isset($product['skus']) && is_array($product['skus'])) {
+                foreach ($product['skus'] as $sku) {
+                    if (isset($sku['inventory']) && is_array($sku['inventory'])) {
+                        foreach ($sku['inventory'] as $inv) {
                             $productStock += $inv['quantity'] ?? 0;
                         }
                     }
-                    if(isset($sku['price']['tax_exclusive_price'])) {
-                        $productPrice = (int)$sku['price']['tax_exclusive_price'];
+                    if (isset($sku['price']['tax_exclusive_price'])) {
+                        $productPrice = (int) $sku['price']['tax_exclusive_price'];
                     }
                 }
             }
-            
+
             $totalStock += $productStock;
             $inventoryValue += $productPrice * $productStock;
-            
+
             // Count active products
-            if(($product['status'] ?? '') === 'ACTIVATE') {
+            if (($product['status'] ?? '') === 'ACTIVATE') {
                 $activeProducts++;
             }
         }
@@ -199,7 +199,7 @@ class ProductController extends Controller
                 if (isset($data['code']) && $data['code'] === 0) {
                     $products = $data['data']['products'] ?? [];
                     $productMetrics = $this->calculateProductMetrics($products);
-                    
+
                     return $productMetrics;
                 }
             }
