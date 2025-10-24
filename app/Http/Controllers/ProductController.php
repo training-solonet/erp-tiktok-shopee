@@ -7,6 +7,7 @@ use App\Models\Setting;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 class ProductController extends Controller
 {
@@ -16,94 +17,143 @@ class ProductController extends Controller
     public function index()
     {
         try {
-            // Get access token dari helper
+            // === 1️⃣ Ambil credential dari DB ===
             $accessToken = Authtentication::getTikTokAccessToken();
-
-            // Ambil parameter dari database
-            $appKey = Setting::where('key', 'tiktok-app-key')->first();
-            $shopCipher = Setting::where('key', 'tiktok-shop-cipher')->first();
+            $appKey = Setting::where('key', 'tiktok-app-key')->first()?->value;
+            $shopCipher = Setting::where('key', 'tiktok-shop-cipher')->first()?->value;
 
             if (! $appKey || ! $shopCipher) {
                 throw new Exception('TikTok credentials not complete in settings');
             }
 
-            // Prepare request
+            // === 2️⃣ Ambil daftar produk dasar ===
             $path = '/product/202502/products/search';
             $bodyArray = [
                 'status' => 'ACTIVATE',
                 'listing_quality_tier' => 'GOOD',
             ];
-            $body = json_encode($bodyArray);
-
-            // Prepare query parameters (without sign and timestamp)
             $params = [
-                'app_key' => $appKey->value,
-                'shop_cipher' => $shopCipher->value,
+                'app_key' => $appKey,
+                'shop_cipher' => $shopCipher,
                 'page_size' => 100,
             ];
 
-            // Generate signature (will add timestamp inside)
-            $signData = Authtentication::generateTikTokSignature($path, $params, $body);
-
-            // Add sign and timestamp to params for URL
+            $signData = Authtentication::generateTikTokSignature($path, $params, json_encode($bodyArray));
             $params['sign'] = $signData['sign'];
             $params['timestamp'] = $signData['timestamp'];
 
-            // Build full URL with query parameters
             $url = 'https://open-api.tiktokglobalshop.com' . $path;
-
-            // Hit TikTok API using POST with proper JSON formatting
             $response = Http::asJson()
-                ->withHeaders([
-                    'x-tts-access-token' => $accessToken,
-                ])
+                ->withHeaders(['x-tts-access-token' => $accessToken])
                 ->withQueryParameters($params)
                 ->post($url, $bodyArray);
 
-            if ($response->successful()) {
-                $data = $response->json();
-
-                // Check TikTok response code
-                if (isset($data['code']) && $data['code'] === 0) {
-                    $products = $data['data']['products'] ?? [];
-
-                    // Calculate product metrics
-                    $productMetrics = $this->calculateProductMetrics($products);
-
-                    return view('pages.products', array_merge($productMetrics, [
-                        'products' => $products,
-                        'total' => $data['data']['total'] ?? 0,
-                        'success' => true,
-                    ]));
-                }
-
-                // TikTok API error
-                return view('pages.products', [
-                    'products' => [],
-                    'error' => $data['message'] ?? 'Unknown error from TikTok API',
-                    'success' => false,
-                ]);
+            if (! $response->successful()) {
+                throw new Exception('Failed to fetch product list: ' . $response->body());
             }
 
-            // HTTP error
+            $data = $response->json();
+            if (($data['code'] ?? -1) !== 0) {
+                throw new Exception('TikTok API error: ' . ($data['message'] ?? 'Unknown'));
+            }
+
+            $basicProducts = $data['data']['products'] ?? [];
+
+            // === 3️⃣ Ambil detail lengkap untuk setiap produk ===
+            $detailedProducts = collect($basicProducts)->map(function ($product) use ($accessToken, $appKey, $shopCipher) {
+                $productId = $product['id'] ?? null;
+                if (! $productId) {
+                    return $product;
+                }
+
+                $detail = $this->fetchProductDetail($productId, $accessToken, $appKey, $shopCipher);
+
+                // Jika detail tidak null, merge
+                if (! empty($detail)) {
+                    return array_merge($product, ['detail' => $detail]);
+                }
+
+                // Jika gagal ambil detail, tetap kembalikan produk dasar
+                return array_merge($product, ['detail' => null]);
+            });
+
+            // === 4️⃣ Return VIEW dengan data produk ===
             return view('pages.products', [
-                'products' => [],
-                'error' => 'Failed to fetch products: ' . $response->body(),
-                'success' => false,
+                'products' => [
+                    'success' => true,
+                    'count' => $detailedProducts->count(),
+                    'products' => $detailedProducts->values()->toArray(),
+                ],
             ]);
 
         } catch (Exception $e) {
+            Log::error('TikTok Product Fetch Error: ' . $e->getMessage());
+
+            // Return view dengan data kosong jika error
             return view('pages.products', [
-                'products' => [],
-                'error' => $e->getMessage(),
-                'success' => false,
+                'products' => [
+                    'success' => false,
+                    'count' => 0,
+                    'products' => [],
+                    'error' => $e->getMessage(),
+                ],
             ]);
         }
     }
 
     /**
-     * Calculate product metrics from products data
+     * Fetch single product detail from TikTok
      */
+    private function fetchProductDetail(string $productId, string $accessToken, string $appKey, string $shopCipher)
+    {
+        try {
+            $path = '/product/202309/products/' . $productId;
+            $params = [
+                'app_key' => $appKey,
+                'shop_cipher' => $shopCipher,
+            ];
+
+            // Signature untuk endpoint GET tidak butuh body (kosong string)
+            $signData = Authtentication::generateTikTokSignature($path, $params, '');
+            $params['sign'] = $signData['sign'];
+            $params['timestamp'] = $signData['timestamp'];
+
+            $url = 'https://open-api.tiktokglobalshop.com' . $path;
+
+            $response = Http::withHeaders(['x-tts-access-token' => $accessToken])
+                ->withQueryParameters($params)
+                ->get($url);
+
+            if (! $response->successful()) {
+                Log::warning("Failed to fetch detail for Product ID {$productId}: " . $response->body());
+
+                return;
+            }
+
+            $data = $response->json();
+            if (($data['code'] ?? -1) !== 0) {
+                Log::warning("TikTok detail error for {$productId}: " . ($data['message'] ?? 'Unknown'));
+
+                return;
+            }
+
+            // Beberapa response TikTok menempatkan data di ['data']['product'] atau ['data']
+            $detail = $data['data']['product'] ?? $data['data'] ?? null;
+
+            if (empty($detail)) {
+                Log::info("No detail content found for Product ID {$productId}");
+            }
+
+            return $detail;
+        } catch (Exception $e) {
+            Log::error("Detail fetch exception for {$productId}: " . $e->getMessage());
+
+            return;
+        }
+    }
+
+    // ======================= METODE LAINNYA ======================= //
+
     private function calculateProductMetrics($products)
     {
         $totalProducts = count($products);
@@ -115,7 +165,6 @@ class ProductController extends Controller
             $productStock = 0;
             $productPrice = 0;
 
-            // Calculate stock and price from SKUs
             if (isset($product['skus']) && is_array($product['skus'])) {
                 foreach ($product['skus'] as $sku) {
                     if (isset($sku['inventory']) && is_array($sku['inventory'])) {
@@ -132,7 +181,6 @@ class ProductController extends Controller
             $totalStock += $productStock;
             $inventoryValue += $productPrice * $productStock;
 
-            // Count active products
             if (($product['status'] ?? '') === 'ACTIVATE') {
                 $activeProducts++;
             }
@@ -146,16 +194,10 @@ class ProductController extends Controller
         ];
     }
 
-    /**
-     * Get product metrics for dashboard (new method)
-     */
     public function getProductMetrics()
     {
         try {
-            // Get access token dari helper
             $accessToken = Authtentication::getTikTokAccessToken();
-
-            // Ambil parameter dari database
             $appKey = Setting::where('key', 'tiktok-app-key')->first();
             $shopCipher = Setting::where('key', 'tiktok-shop-cipher')->first();
 
@@ -163,57 +205,43 @@ class ProductController extends Controller
                 throw new Exception('TikTok credentials not complete in settings');
             }
 
-            // Prepare request
             $path = '/product/202502/products/search';
             $bodyArray = [
                 'status' => 'ACTIVATE',
                 'listing_quality_tier' => 'GOOD',
             ];
-
-            // Prepare query parameters
             $params = [
                 'app_key' => $appKey->value,
                 'shop_cipher' => $shopCipher->value,
                 'page_size' => 100,
             ];
 
-            // Generate signature
             $signData = Authtentication::generateTikTokSignature($path, $params, json_encode($bodyArray));
             $params['sign'] = $signData['sign'];
             $params['timestamp'] = $signData['timestamp'];
 
-            // Build full URL
             $url = 'https://open-api.tiktokglobalshop.com' . $path;
-
-            // Hit TikTok API
             $response = Http::asJson()
-                ->withHeaders([
-                    'x-tts-access-token' => $accessToken,
-                ])
+                ->withHeaders(['x-tts-access-token' => $accessToken])
                 ->withQueryParameters($params)
                 ->post($url, $bodyArray);
 
             if ($response->successful()) {
                 $data = $response->json();
-
                 if (isset($data['code']) && $data['code'] === 0) {
                     $products = $data['data']['products'] ?? [];
-                    $productMetrics = $this->calculateProductMetrics($products);
 
-                    return $productMetrics;
+                    return $this->calculateProductMetrics($products);
                 }
             }
 
-            // Return default values if API fails
             return [
                 'total_products' => 0,
                 'total_stock' => 0,
                 'active_products' => 0,
                 'inventory_value' => 0,
             ];
-
         } catch (Exception $e) {
-            // Return default values on error
             return [
                 'total_products' => 0,
                 'total_stock' => 0,
@@ -222,7 +250,6 @@ class ProductController extends Controller
             ];
         }
     }
-    // ... method lainnya tetap sama
 
     /**
      * Show the form for creating a new resource.

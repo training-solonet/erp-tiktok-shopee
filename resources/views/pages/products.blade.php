@@ -76,13 +76,13 @@
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-gray-500 text-xs font-medium mb-1 uppercase tracking-wide">Total Produk</p>
-                    <p class="text-2xl font-bold text-gray-900 mb-1">{{ count($products ?? []) }}</p>
+                    <p class="text-2xl font-bold text-gray-900 mb-1">{{ $products['count'] ?? 0 }}</p>
                     <p class="text-xs text-emerald-600 flex items-center">
                         <i class='bx bx-up-arrow-alt mr-1'></i>
                         @php
                             $activeProducts = 0;
-                            if(isset($products)) {
-                                foreach($products as $product) {
+                            if(isset($products['products'])) {
+                                foreach($products['products'] as $product) {
                                     if(($product['status'] ?? '') === 'ACTIVATE') {
                                         $activeProducts++;
                                     }
@@ -106,11 +106,18 @@
                     <p class="text-2xl font-bold text-gray-900 mb-1">
                         @php
                             $totalStock = 0;
-                            if(isset($products)) {
-                                foreach($products as $product) {
-                                    if(isset($product['skus']) && is_array($product['skus'])) {
-                                        foreach($product['skus'] as $sku) {
-                                            if(isset($sku['inventory']) && is_array($sku['inventory'])) {
+                            if(isset($products['products'])) {
+                                foreach($products['products'] as $product) {
+                                    $productData = $product['detail'] ?? $product;
+                                    if(isset($productData['skus']) && is_array($productData['skus'])) {
+                                        foreach($productData['skus'] as $sku) {
+                                            if(isset($sku['stock_info']) && is_array($sku['stock_info'])) {
+                                                foreach($sku['stock_info'] as $inv) {
+                                                    $totalStock += $inv['available_stock'] ?? 0;
+                                                }
+                                            }
+                                            // Fallback untuk struktur inventory lama
+                                            elseif(isset($sku['inventory']) && is_array($sku['inventory'])) {
                                                 foreach($sku['inventory'] as $inv) {
                                                     $totalStock += $inv['quantity'] ?? 0;
                                                 }
@@ -141,19 +148,31 @@
                     <p class="text-xl font-bold text-gray-900 mb-1">
                         @php
                             $inventoryValue = 0;
-                            if(isset($products)) {
-                                foreach($products as $product) {
+                            if(isset($products['products'])) {
+                                foreach($products['products'] as $product) {
                                     $productStock = 0;
                                     $productPrice = 0;
+                                    $productData = $product['detail'] ?? $product;
                                     
-                                    if(isset($product['skus']) && is_array($product['skus'])) {
-                                        foreach($product['skus'] as $sku) {
-                                            if(isset($sku['inventory']) && is_array($sku['inventory'])) {
+                                    if(isset($productData['skus']) && is_array($productData['skus'])) {
+                                        foreach($productData['skus'] as $sku) {
+                                            // Hitung stok
+                                            if(isset($sku['stock_info']) && is_array($sku['stock_info'])) {
+                                                foreach($sku['stock_info'] as $inv) {
+                                                    $productStock += $inv['available_stock'] ?? 0;
+                                                }
+                                            }
+                                            elseif(isset($sku['inventory']) && is_array($sku['inventory'])) {
                                                 foreach($sku['inventory'] as $inv) {
                                                     $productStock += $inv['quantity'] ?? 0;
                                                 }
                                             }
-                                            if(isset($sku['price']['tax_exclusive_price'])) {
+                                            
+                                            // Ambil harga
+                                            if(isset($sku['price_info']['original_price'])) {
+                                                $productPrice = (int)$sku['price_info']['original_price'];
+                                            }
+                                            elseif(isset($sku['price']['tax_exclusive_price'])) {
                                                 $productPrice = (int)$sku['price']['tax_exclusive_price'];
                                             }
                                         }
@@ -184,8 +203,8 @@
                     <p class="text-2xl font-bold text-gray-900 mb-1">
                         @php
                             $activeProductsCount = 0;
-                            if(isset($products)) {
-                                foreach($products as $product) {
+                            if(isset($products['products'])) {
+                                foreach($products['products'] as $product) {
                                     if(($product['status'] ?? '') === 'ACTIVATE') {
                                         $activeProductsCount++;
                                     }
@@ -217,7 +236,7 @@
             <div class="flex items-center justify-between">
                 <h3 class="text-lg font-semibold text-gray-900">Katalog Produk</h3>
                 <div class="flex items-center space-x-2 text-sm text-gray-600">
-                    <span id="productsCount">{{ count($products ?? []) }}</span>
+                    <span id="productsCount">{{ $products['count'] ?? 0 }}</span>
                     <span>produk</span>
                 </div>
             </div>
@@ -226,22 +245,36 @@
         <!-- Products Content -->
         <div class="p-6 relative z-10">
             <div id="productsContainer">
-                @if(isset($products) && count($products) > 0)
+                @if(isset($products['products']) && count($products['products']) > 0)
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6" id="productsGrid">
-                    @foreach($products as $product)
+                    @foreach($products['products'] as $product)
                     @php
+                        $productData = $product['detail'] ?? $product;
                         $productStock = 0;
                         $productPrice = 0;
                         $productValue = 0;
                         
-                        if(isset($product['skus']) && is_array($product['skus'])) {
-                            foreach($product['skus'] as $sku) {
-                                if(isset($sku['inventory']) && is_array($sku['inventory'])) {
+                        // Hitung stok dan harga dari struktur data TikTok
+                        if(isset($productData['skus']) && is_array($productData['skus'])) {
+                            foreach($productData['skus'] as $sku) {
+                                // Stok dari struktur TikTok
+                                if(isset($sku['stock_info']) && is_array($sku['stock_info'])) {
+                                    foreach($sku['stock_info'] as $inv) {
+                                        $productStock += $inv['available_stock'] ?? 0;
+                                    }
+                                }
+                                // Fallback untuk struktur inventory lama
+                                elseif(isset($sku['inventory']) && is_array($sku['inventory'])) {
                                     foreach($sku['inventory'] as $inv) {
                                         $productStock += $inv['quantity'] ?? 0;
                                     }
                                 }
-                                if(isset($sku['price']['tax_exclusive_price'])) {
+                                
+                                // Harga dari struktur TikTok
+                                if(isset($sku['price_info']['original_price'])) {
+                                    $productPrice = (int)$sku['price_info']['original_price'];
+                                }
+                                elseif(isset($sku['price']['tax_exclusive_price'])) {
                                     $productPrice = (int)$sku['price']['tax_exclusive_price'];
                                 }
                             }
@@ -270,13 +303,32 @@
                             $statusClass = 'bg-gray-50 text-gray-700 border border-gray-200';
                             $statusText = 'Draft';
                             $statusIcon = 'bx-edit';
+                        } elseif(($product['status'] ?? '') === 'ARCHIVED') {
+                            $statusClass = 'bg-gray-200 text-gray-700 border border-gray-300';
+                            $statusText = 'Arsip';
+                            $statusIcon = 'bx-archive';
+                        }
+
+                        // Bersihkan deskripsi dari tag HTML
+                        $cleanDescription = strip_tags($productData['description'] ?? '');
+                        $cleanDescription = str_replace(['&nbsp;', '&amp;'], [' ', '&'], $cleanDescription);
+                        $cleanDescription = trim($cleanDescription);
+                        
+                        // Ambil gambar produk - perbaikan struktur gambar
+                        $productImage = '';
+                        if(isset($productData['main_images']) && is_array($productData['main_images']) && count($productData['main_images']) > 0) {
+                            // Struktur: main_images[0]['urls'][0]
+                            $firstImage = $productData['main_images'][0];
+                            if(isset($firstImage['urls']) && is_array($firstImage['urls']) && count($firstImage['urls']) > 0) {
+                                $productImage = $firstImage['urls'][0];
+                            }
                         }
                     @endphp
                     
                     <!-- Product Card yang Elegant dengan Hover Effect -->
                     <div class="product-card bg-white border border-gray-200 rounded-xl overflow-hidden hover:shadow-lg transition-all duration-300 group relative" 
-                         data-title="{{ strtolower($product['title'] ?? '') }}"
-                         data-description="{{ strtolower($product['description'] ?? '') }}"
+                         data-title="{{ strtolower($productData['title'] ?? '') }}"
+                         data-description="{{ strtolower($cleanDescription) }}"
                          data-status="{{ $product['status'] ?? '' }}"
                          data-price="{{ $productPrice }}"
                          data-stock="{{ $productStock }}"
@@ -284,15 +336,21 @@
                         <!-- Corner accent pada hover -->
                         <div class="absolute top-0 right-0 w-3 h-3 bg-amber-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-bl-lg"></div>
                         
-                        <!-- Product Image -->
-                        <div class="h-48 relative overflow-hidden bg-gradient-to-br from-gray-50 to-gray-100">
-                            @if(isset($product['main_images']) && count($product['main_images']) > 0)
-                                <img src="{{ $product['main_images'][0]['url_list'][0] ?? '' }}" 
-                                     alt="{{ $product['title'] ?? 'Product Image' }}" 
-                                     class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+                        <!-- Product Image - Diperbaiki untuk fokus pada model -->
+                        <div class="h-56 relative overflow-hidden bg-gradient-to-br from-gray-50 to-gray-100">
+                            @if(!empty($productImage))
+                                <img src="{{ $productImage }}" 
+                                     alt="{{ $productData['title'] ?? 'Product Image' }}" 
+                                     class="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-300"
+                                     style="object-position: center 10%;"
+                                     onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
+                                     loading="lazy">
+                                <div class="w-full h-full hidden items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200">
+                                    <i class='bx bx-package text-gray-400 text-4xl'></i>
+                                </div>
                             @else
-                                <div class="w-full h-full flex items-center justify-center">
-                                    <i class='bx bx-package text-gray-300 text-4xl'></i>
+                                <div class="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200">
+                                    <i class='bx bx-package text-gray-400 text-4xl'></i>
                                 </div>
                             @endif
                             
@@ -317,11 +375,11 @@
                         <!-- Product Info -->
                         <div class="p-4">
                             <h3 class="font-semibold text-gray-900 text-sm mb-2 line-clamp-2 leading-tight group-hover:text-amber-700 transition-colors">
-                                {{ $product['title'] ?? 'N/A' }}
+                                {{ $productData['title'] ?? 'N/A' }}
                             </h3>
                             
                             <p class="text-xs text-gray-600 mb-3 line-clamp-2 leading-relaxed">
-                                {{ $product['description'] ?? 'Deskripsi tidak tersedia' }}
+                                {{ $cleanDescription ?: 'Deskripsi tidak tersedia' }}
                             </p>
                             
                             <!-- Price and Stock -->
@@ -345,16 +403,18 @@
                             </div>
 
                             <!-- Actions -->
+                            <a href="{{ route('overview_menu', ['id' => $product['id'] ?? '']) }}">
                             <div class="flex space-x-2">
                                 <button class="flex-1 bg-amber-600 hover:bg-amber-700 text-white py-2.5 rounded-lg font-medium transition-all duration-200 hover:shadow-md flex items-center justify-center text-sm edit-product-btn"
                                         data-product-id="{{ $product['id'] ?? '' }}">
                                     <i class='bx bx-edit mr-1.5'></i>
-                                    <a href="#">Cek Produk</a>
+                                    <span>Cek Produk</span>
                                 </button>
                                 <button class="w-12 h-12 border border-gray-300 hover:border-amber-400 hover:bg-amber-50 rounded-lg flex items-center justify-center transition-all duration-200 group/action">
                                     <i class='bx bx-dots-vertical-rounded text-gray-600 group-hover/action:text-amber-600'></i>
                                 </button>
                             </div>
+                            </a>
 
                             <!-- Product Meta -->
                             <div class="mt-3 pt-3 border-t border-gray-100">
@@ -391,8 +451,8 @@
             <!-- Pagination dengan Style Elegant -->
             <div id="pagination" class="flex flex-col sm:flex-row items-center justify-between pt-6 mt-6 border-t border-gray-200">
                 <p class="text-sm text-gray-600 mb-3 sm:mb-0">
-                    Menampilkan <span class="font-semibold text-amber-600" id="visibleProductsCount">{{ count($products ?? []) }}</span> dari 
-                    <span class="font-semibold">{{ count($products ?? []) }}</span> produk
+                    Menampilkan <span class="font-semibold text-amber-600" id="visibleProductsCount">{{ $products['count'] ?? 0 }}</span> dari 
+                    <span class="font-semibold">{{ $products['count'] ?? 0 }}</span> produk
                 </p>
                 <div class="flex items-center space-x-2">
                     <button class="px-4 py-2.5 text-sm border border-gray-300 rounded-lg hover:bg-amber-50 hover:border-amber-300 transition-colors duration-200 flex items-center">
@@ -472,78 +532,20 @@
 .backdrop-blur-sm {
     backdrop-filter: blur(8px);
 }
-</style>
-
-
-<style>
-.line-clamp-2 {
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-}
-
-.transition-all {
-    transition: all 0.3s ease-in-out;
-}
-
-.hidden {
-    display: none !important;
-}
-
-/* Elegant animations */
-@keyframes fadeInUp {
-    from { 
-        opacity: 0; 
-        transform: translateY(20px); 
-    }
-    to { 
-        opacity: 1; 
-        transform: translateY(0); 
-    }
-}
-
-.fade-in-up {
-    animation: fadeInUp 0.5s ease-out;
-}
-
-/* Loading animation */
-.animate-spin {
-    animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
-}
-
-/* Smooth hover effects */
-.group:hover .group-hover\:scale-105 {
-    transform: scale(1.05);
-}
-
-.group:hover .group-hover\:scale-110 {
-    transform: scale(1.1);
-}
-
-.hover\:-translate-y-1:hover {
-    transform: translateY(-4px);
-}
-
-/* Backdrop blur for modern look */
-.backdrop-blur-sm {
-    backdrop-filter: blur(8px);
-}
 
 /* Gradient text effect */
 .bg-clip-text {
     -webkit-background-clip: text;
     background-clip: text;
 }
+
+/* Improved image display for fashion products */
+.object-center {
+    object-position: center 30%;
+}
 </style>
 
 <script>
-// JavaScript code remains exactly the same as before...
 document.addEventListener('DOMContentLoaded', function() {
     // DOM Elements
     const searchInput = document.getElementById('searchInput');

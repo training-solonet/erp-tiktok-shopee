@@ -883,6 +883,7 @@
                     address: "Jl. Contoh No. 123, Jakarta",
                     phone: "+62 812-3456-7890"
                 },
+                
                 report: {
                     title: "Laporan Kinerja Bisnis",
                     period: `${startDate.toLocaleDateString('id-ID')} - ${currentDate.toLocaleDateString('id-ID')}`,

@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\CallbackController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\OrderController;
+use App\Http\Controllers\OverviewController;
 use App\Http\Controllers\ProductController;
 use Illuminate\Support\Facades\Route;
 
@@ -23,6 +24,7 @@ Route::middleware([
     'auth:sanctum',
     config('jetstream.auth_session'),
     'verified',
+
 ])->group(function () {
     Route::get('/dashboard', function () {
         return view('dashboard');
@@ -38,3 +40,7 @@ Route::get('/orders', function () {
 })->name('orders_menu');
 
 Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard_menu');
+
+Route::resource('/test', OrderController::class);
+
+Route::get('/products/overview/{id}', [OverviewController::class, 'show'])->name('overview_menu');
