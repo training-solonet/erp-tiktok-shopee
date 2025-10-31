@@ -60,50 +60,41 @@ class OrderController extends Controller
                 ->withQueryParameters($params)
                 ->post($url, $bodyArray);
 
-            Log::info('TikTok API Response', [
-                'status' => $response->status(),
-                'body' => $response->body(),
-            ]);
+            $orders = [];
+            $error = null;
+            $success = false;
 
-            if ($response->successful()) {
+            if ($response->successful()) {  
                 $data = $response->json();
-
+                
                 if (isset($data['code']) && $data['code'] === 0) {
-                    $orders = $data['data']['orders'] ?? [];
-
+                    $orders = $data['data']['order_list'] ?? [];
+                    $success = true;
+                    
                     Log::info('Orders fetched successfully', [
                         'count' => count($orders),
                         'total_count' => $data['data']['total_count'] ?? 0,
                     ]);
-
-                    return view('pages.orders', [
-                        'orders' => $orders,
-                        'total_orders' => $data['data']['total_count'] ?? 0,
-                        'success' => true,
+                } else {
+                    $error = $data['message'] ?? 'Unknown error from TikTok API';
+                    Log::error('TikTok API error', [
+                        'code' => $data['code'] ?? 'unknown',
+                        'message' => $error,
                     ]);
                 }
-
-                Log::error('TikTok API error', [
-                    'code' => $data['code'] ?? 'unknown',
-                    'message' => $data['message'] ?? 'No message',
-                ]);
-
-                return view('pages.orders', [
-                    'orders' => [],
-                    'error' => $data['message'] ?? 'Unknown error from TikTok API',
-                    'success' => false,
+            } else {
+                $error = 'Failed to fetch orders. HTTP Status: ' . $response->status();
+                Log::error('HTTP request failed', [
+                    'status' => $response->status(),
+                    'response' => $response->json()
                 ]);
             }
 
-            Log::error('HTTP request failed', [
-                'status' => $response->status(),
-                'body' => $response->body(),
-            ]);
-
             return view('pages.orders', [
-                'orders' => [],
-                'error' => 'Failed to fetch orders. HTTP Status: ' . $response->status(),
-                'success' => false,
+                'orders' => collect($orders),
+                'error' => $error,
+                'success' => $success,
+                'total_orders' => $data['data']['total_count'] ?? 0,
             ]);
 
         } catch (Exception $e) {
@@ -123,7 +114,7 @@ class OrderController extends Controller
 
     /**
      * Show the form for creating a new resource.
-     */
+     */  
     public function create()
     {
         //

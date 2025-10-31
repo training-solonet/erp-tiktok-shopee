@@ -5,36 +5,40 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\ProductController;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Auth;
 
+// Redirect root to login if not authenticated, otherwise to dashboard
 Route::get('/', function () {
-    return redirect('/products');
-})->name('products_menu');
-
-// Route::get('dashboard', function(){
-//     return view('dashboard');
-// });
-
-Route::resource('products', ProductController::class);
-Route::resource('orders', OrderController::class);
-
-Route::get('/tiktok/callback', [CallbackController::class, 'handleAuthCallback'])->name('tiktok.callback');
-
-Route::middleware([
-    'auth:sanctum',
-    config('jetstream.auth_session'),
-    'verified',
-])->group(function () {
-    Route::get('/dashboard', function () {
-        return view('dashboard');
-    })->name('dashboard');
+    if (Auth::check()) {
+        return redirect()->route('dashboard');
+    }
+    return redirect()->route('login');
 });
 
-// Route::get('/products', function(){
-//     return view('pages.products');
-// })->name('products_menu');
+// Authentication routes
+Route::middleware('guest')->group(function () {
+    Route::get('login', [\App\Http\Controllers\Auth\AuthenticatedSessionController::class, 'create'])
+        ->name('login');
+    
+    Route::post('login', [\App\Http\Controllers\Auth\AuthenticatedSessionController::class, 'store']);
+});
 
-Route::get('/orders', function () {
-    return view('pages.orders');
-})->name('orders_menu');
+// Protected routes
+Route::middleware(['auth'])->group(function () {
+    // Dashboard
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    
+    // Products
+    Route::resource('products', ProductController::class);
+    
+    // Orders
+    Route::get('/orders', [OrderController::class, 'index'])->name('orders_menu');
+    
+    // Logout
+    Route::post('logout', [\App\Http\Controllers\Auth\AuthenticatedSessionController::class, 'destroy'])
+        ->name('logout');
+});
 
-Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard_menu');
+// TikTok Callback (public route)
+Route::get('/tiktok/callback', [CallbackController::class, 'handleAuthCallback'])
+    ->name('tiktok.callback');

@@ -6,6 +6,7 @@
     <title>@yield('title', 'Butik Solo Jala Buana')</title>
     <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
     <script src="https://cdn.tailwindcss.com"></script>
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
     <style>
         .nav-item.active {
             background-color: #FEF7E6;
@@ -30,6 +31,7 @@
     </style>
 </head>
 <body class="bg-gray-50">
+    @auth
     <!-- Sidebar Navigation -->
     <nav id="sidebar" class="fixed left-0 top-0 h-screen w-64 bg-white shadow-xl z-50 transform -translate-x-full lg:translate-x-0 transition-transform duration-300 border-r border-gray-200">
         <div class="p-6 h-full flex flex-col">
@@ -42,7 +44,7 @@
             <!-- Navigation Menu -->
             <ul class="space-y-2 flex-1">
                 <li>
-                    <a href="{{ route('dashboard_menu') }}" 
+                    <a href="{{ route('dashboard') }}" 
                        class="nav-item flex items-center px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg transition-all duration-300"
                        data-route="dashboard">
                        <i class='bx bx-home text-lg mr-3'></i>
@@ -50,7 +52,7 @@
                     </a>
                 </li>
                 <li>
-                    <a href="{{ route('products_menu') }}" 
+                    <a href="{{ route('products.index') }}" 
                        class="nav-item flex items-center px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg transition-all duration-300"
                        data-route="products">
                        <i class='bx bx-package text-lg mr-3'></i>
@@ -71,15 +73,18 @@
             <div class="pt-6 border-t border-gray-200">
                 <div class="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
                     <div class="w-8 h-8 bg-primary rounded-full flex items-center justify-center text-white text-sm font-semibold">
-                        BS
+                        {{ strtoupper(substr(Auth::user()->name, 0, 1)) }}
                     </div>
                     <div class="flex-1 min-w-0">
-                        <p class="text-sm font-medium text-gray-900 truncate">Butik Solo</p>
+                        <p class="text-sm font-medium text-gray-900 truncate">{{ Auth::user()->name }}</p>
                         <p class="text-xs text-gray-500 truncate">Administrator</p>
                     </div>
-                    <button class="p-1 text-gray-400 hover:text-gray-600 transition-colors">
-                        <i class='bx bx-log-out text-lg'></i>
-                    </button>
+                    <form method="POST" action="{{ route('logout') }}">
+                        @csrf
+                        <button type="submit" class="p-1 text-gray-400 hover:text-gray-600 transition-colors">
+                            <i class='bx bx-log-out text-lg'></i>
+                        </button>
+                    </form>
                 </div>
             </div>
         </div>
@@ -91,11 +96,28 @@
             <i class='bx bx-menu text-xl text-primary'></i>
         </button>
     </div>
+    @endauth
 
     <!-- Main Content -->
-    <main class="lg:ml-64 min-h-screen">
-        @yield('content')
+    <main class="{{ auth()->check() ? 'lg:ml-64' : '' }} min-h-screen">
+        @auth
+        <!-- Top Navigation Bar -->
+        <header class="bg-white shadow-sm">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
+                <h1 class="text-xl font-semibold text-gray-900">@yield('page-title', 'Dashboard')</h1>
+            </div>
+        </header>
+        @endif
+        
+        <!-- Page Content -->
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            @yield('content')
+            {{ $slot ?? '' }}
+        </div>
     </main>
+    
+    <!-- Alpine.js -->
+    <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
@@ -124,9 +146,6 @@
                 const currentPath = window.location.pathname;
                 const currentHash = window.location.hash;
                 
-                console.log('Current Path:', currentPath);
-                console.log('Current Hash:', currentHash);
-                
                 // Reset semua active state
                 navItems.forEach(item => {
                     item.classList.remove('active');
@@ -135,23 +154,16 @@
                 // Logic untuk menentukan menu aktif
                 if (currentPath.includes('/products') || currentHash === '#products') {
                     // Products page
-                    document.querySelector('[data-route="products"]').classList.add('active');
-                    console.log('Setting active: Products');
+                    const productsLink = document.querySelector('[data-route="products"]');
+                    if (productsLink) productsLink.classList.add('active');
                 } else if (currentPath.includes('/orders') || currentHash === '#orders') {
                     // Orders page  
-                    document.querySelector('[data-route="orders"]').classList.add('active');
-                    console.log('Setting active: Orders');
+                    const ordersLink = document.querySelector('[data-route="orders"]');
+                    if (ordersLink) ordersLink.classList.add('active');
                 } else if (currentPath.includes('/dashboard') || currentPath === '/' || currentHash === '#dashboard' || currentHash === '') {
                     // Dashboard page (default)
-                    document.querySelector('[data-route="dashboard"]').classList.add('active');
-                    console.log('Setting active: Dashboard');
-                }
-                
-                // Fallback: Jika tidak ada yang match, set dashboard sebagai default
-                const activeItems = document.querySelectorAll('.nav-item.active');
-                if (activeItems.length === 0) {
-                    document.querySelector('[data-route="dashboard"]').classList.add('active');
-                    console.log('Fallback: Setting active: Dashboard');
+                    const dashboardLink = document.querySelector('[data-route="dashboard"]');
+                    if (dashboardLink) dashboardLink.classList.add('active');
                 }
             }
 
@@ -160,8 +172,6 @@
             
             // Juga panggil saat URL berubah (untuk single page application behavior)
             window.addEventListener('popstate', setActiveNav);
-            
-            // Untuk handle hash changes
             window.addEventListener('hashchange', setActiveNav);
         });
     </script>

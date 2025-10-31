@@ -152,7 +152,7 @@
             <!-- Navigation Menu -->
             <ul class="space-y-2 flex-1">
                 <li>
-                    <a href="{{ route('dashboard_menu') }}" 
+                    <a href="{{ route('dashboard') }}" 
                        class="nav-item flex items-center px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg transition-all duration-300 active"
                        data-route="dashboard">
                        <i class='bx bx-home text-lg mr-3'></i>
@@ -160,7 +160,7 @@
                     </a>
                 </li>
                 <li>
-                    <a href="{{ route('products_menu') }}" 
+                    <a href="{{ route('products.index') }}" 
                        class="nav-item flex items-center px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg transition-all duration-300"
                        data-route="products">
                        <i class='bx bx-package text-lg mr-3'></i>
@@ -217,7 +217,7 @@
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Pilih Periode</label>
                         <div class="grid grid-cols-2 gap-3">
-                            <button class="export-period-btn border border-gray-300 rounded-lg py-2 px-3 text-sm hover:bg-gray-50 transition-colors active bg-amber-100 border-amber-400" data-period="7">
+                            <button class="export-period-btn border border-gray-300 rounded-lg py-2 px-3 text-sm hover:bg-gray-50 transition-colors active bg-amber-100" data-period="7">
                                 7 Hari Terakhir
                             </button>
                             <button class="export-period-btn border border-gray-300 rounded-lg py-2 px-3 text-sm hover:bg-gray-50 transition-colors" data-period="30">
@@ -509,7 +509,7 @@
                         <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
                             <h3 class="text-lg font-semibold text-gray-900 mb-4">Aksi Cepat</h3>
                             <div class="space-y-3">
-                                <a href="{{ route('products_menu') }}" class="flex items-center p-3 bg-amber-50 rounded-lg hover:bg-amber-100 transition-colors duration-200 group">
+                                <a href="{{ route('products.index') }}" class="flex items-center p-3 bg-amber-50 rounded-lg hover:bg-amber-100 transition-colors duration-200 group">
                                     <div class="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center mr-3 group-hover:scale-110 transition-transform">
                                         <i class='bx bx-package text-amber-600 text-lg'></i>
                                     </div>

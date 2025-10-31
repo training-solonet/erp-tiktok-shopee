@@ -2,12 +2,20 @@
 
 namespace App\Http\Controllers;
 
-class DashboardController extends Controller
+use Illuminate\Routing\Controller as BaseController;
+
+class DashboardController extends BaseController
 {
     protected $productController;
 
+    /**
+     * Create a new controller instance.
+     *
+     * @return void
+     */
     public function __construct()
     {
+        $this->middleware('auth');
         $this->productController = new ProductController;
     }
 

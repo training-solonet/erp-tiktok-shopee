@@ -40,7 +40,7 @@
             </div>
         </div>
 
-        <div class="bg-white rounded-xl p-4 border border-gray-200">
+        <div class="bg-white rounded-xl p-4 border bor der-gray-200">
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-gray-500 text-sm font-medium">Pending</p>
@@ -85,7 +85,7 @@
                 <div class="flex items-center space-x-4">
                     <h3 class="text-lg font-semibold text-gray-900">Recent Orders</h3>
                     <span class="bg-amber-100 text-amber-800 px-2.5 py-1 rounded-full text-xs font-medium">
-                        {{ $orders->count() ?? 0 }} orders
+                        {{ is_array($orders) ? count($orders) : $orders->count() }} orders
                     </span>
                 </div>
                 
@@ -111,7 +111,7 @@
 
         <!-- Orders List -->
         <div class="divide-y divide-gray-200">
-            @if(isset($orders) && count($orders) > 0)
+            @if(isset($orders) && (is_array($orders) ? count($orders) : $orders->count()) > 0)
                 @foreach($orders as $order)
                 @php
                     // Format order data
@@ -227,22 +227,25 @@
                     <div class="inline-flex items-center justify-center w-20 h-20 bg-gray-100 rounded-full mb-4">
                         <i class='bx bx-receipt text-3xl text-gray-400'></i>
                     </div>
-                    <h3 class="text-lg font-semibold text-gray-900 mb-2">No Orders Found</h3>
-                    <p class="text-gray-600 mb-6">There are no orders to display at the moment.</p>
-                    <button class="bg-amber-500 hover:bg-amber-600 text-white px-6 py-2.5 rounded-lg font-medium transition-colors duration-300 inline-flex items-center">
+                    <h3 class="text-lg font-medium text-gray-900 mb-1">No orders found</h3>
+                    @if(isset($error) && $error)
+                        <p class="text-red-500 mb-2">Error: {{ $error }}</p>
+                    @endif
+                    <p class="text-gray-500 mb-6">There are currently no orders to display.</p>
+                    <a href="{{ route('orders_menu') }}" class="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-lg font-medium transition-colors duration-300 inline-flex items-center">
                         <i class='bx bx-refresh mr-2'></i>
-                        Sync Orders
-                    </button>
+                        Refresh Orders
+                    </a>
                 </div>
             @endif
         </div>
 
         <!-- Pagination -->
-        @if(isset($orders) && count($orders) > 0)
+        @if(isset($orders) && (is_array($orders) ? count($orders) : $orders->count()) > 0)
         <div class="px-6 py-4 border-t border-gray-200 bg-gray-50">
             <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between">
                 <p class="text-sm text-gray-700 mb-4 sm:mb-0">
-                    Showing <span class="font-medium">1-10</span> of <span class="font-medium">{{ $orders->count() }}</span> orders
+                    Showing <span class="font-medium">1-{{ is_array($orders) ? count($orders) : $orders->count() }}</span> of <span class="font-medium">{{ $total_orders ?? (is_array($orders) ? count($orders) : $orders->count()) }}</span> orders
                 </p>
                 <div class="flex items-center space-x-2">
                     <button class="px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors duration-200 flex items-center">
