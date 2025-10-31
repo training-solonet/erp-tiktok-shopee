@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Models\Product;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class DashboardController extends Controller
@@ -13,7 +12,7 @@ class DashboardController extends Controller
         try {
             // Ambil data produk langsung dari database
             $productMetrics = $this->getProductMetricsFromDatabase();
-            
+
             // Generate dummy orders data
             $dummyOrders = $this->generateDummyOrders();
             $orderMetrics = $this->calculateOrderMetrics($dummyOrders);
@@ -43,7 +42,7 @@ class DashboardController extends Controller
 
         } catch (\Exception $e) {
             Log::error('Dashboard Error: ' . $e->getMessage());
-            
+
             // Fallback dengan data minimal
             return view('pages.dashboard', $this->getFallbackData());
         }
@@ -194,20 +193,20 @@ class DashboardController extends Controller
     {
         try {
             $productMetrics = $this->getProductMetricsFromDatabase();
-            
+
             return response()->json([
                 'success' => true,
                 'data' => $productMetrics,
-                'last_updated' => now()->toDateTimeString()
+                'last_updated' => now()->toDateTimeString(),
             ]);
 
         } catch (\Exception $e) {
             Log::error('Dashboard API Error: ' . $e->getMessage());
-            
+
             return response()->json([
                 'success' => false,
                 'error' => 'Failed to fetch dashboard data',
-                'data' => $this->getFallbackData()
+                'data' => $this->getFallbackData(),
             ], 500);
         }
     }

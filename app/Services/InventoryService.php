@@ -3,7 +3,6 @@
 namespace App\Services;
 
 use App\Models\Product;
-use Illuminate\Support\Facades\Log;
 
 class InventoryService
 {
@@ -17,7 +16,7 @@ class InventoryService
         }
 
         $product = Product::where('tiktok_product_id', $productId)->first();
-        if (!$product) {
+        if (! $product) {
             throw new \Exception("Product not found: {$productId}");
         }
 
@@ -31,7 +30,7 @@ class InventoryService
     {
         $product = Product::where('tiktok_product_id', $productId)->first();
 
-        if (!$product) {
+        if (! $product) {
             throw new \Exception("Product not found: {$productId}");
         }
 
@@ -39,7 +38,7 @@ class InventoryService
             'current_stock' => $product->stock,
             'product_title' => $product->title,
             'last_updated' => $product->synced_at,
-            'status' => $product->status
+            'status' => $product->status,
         ];
     }
 }

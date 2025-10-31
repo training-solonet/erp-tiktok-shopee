@@ -3,10 +3,9 @@
 use App\Http\Controllers\Api\CallbackController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\OrderController;
-use App\Http\Controllers\OverviewController;
 use App\Http\Controllers\ProductController;
-use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ProductOverviewController;
+use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
     return redirect('/products');
@@ -46,7 +45,6 @@ Route::get('/api/dashboard/data', [DashboardController::class, 'getDashboardData
 Route::post('/api/dashboard/refresh', [DashboardController::class, 'refreshMetrics'])->name('dashboard.refresh');
 
 Route::resource('/test', OrderController::class);
-
 
 Route::post('/tiktok/inventory/update-single', [ProductController::class, 'updateStock'])
     ->name('products.updateStock');
@@ -89,6 +87,3 @@ Route::post('/overview/products/manual-sync', [ProductOverviewController::class,
 // Route yang sudah ada (untuk batch update)
 Route::post('/tiktok/inventory/update', [ProductController::class, 'updateTikTokInventory'])
     ->name('tiktok.inventory.update');
-
-
-

@@ -16,5 +16,3 @@ class Product extends Model
         'images' => 'array',
     ];
 }
-
-

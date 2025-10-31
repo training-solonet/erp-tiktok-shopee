@@ -2,13 +2,13 @@
 
 namespace App\Http\Controllers;
 
-use Exception;
-use App\Models\Setting;
-use App\Models\Product;
-use Illuminate\Http\Request;
 use App\Helpers\Authtentication;
-use Illuminate\Support\Facades\Log;
+use App\Models\Product;
+use App\Models\Setting;
+use Exception;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 
 class ProductController extends Controller
@@ -64,7 +64,9 @@ class ProductController extends Controller
             // 3️⃣ Ambil detail lengkap tiap produk dan sinkronkan ke database
             foreach ($basicProducts as $product) {
                 $productId = $product['id'] ?? null;
-                if (! $productId) continue;
+                if (! $productId) {
+                    continue;
+                }
 
                 $detail = $this->fetchProductDetail($productId, $accessToken, $appKey, $shopCipher);
                 $merged = array_merge($product, ['detail' => $detail]);
@@ -82,11 +84,11 @@ class ProductController extends Controller
                 'count' => $databaseProducts->count(),
                 'products' => $databaseProducts->toArray(),
                 'last_sync' => now()->toDateTimeString(),
-                'source' => 'database' // Tambahan info untuk debugging
+                'source' => 'database', // Tambahan info untuk debugging
             ];
 
             return view('pages.products', [
-                'products' => $productsForView
+                'products' => $productsForView,
             ]);
 
         } catch (Exception $e) {
@@ -94,7 +96,7 @@ class ProductController extends Controller
 
             // 🛡️ FALLBACK: Tetap tampilkan data dari database meski sync gagal
             $databaseProducts = Product::orderBy('synced_at', 'desc')->get();
-            
+
             return view('pages.products', [
                 'products' => [
                     'success' => false,
@@ -102,7 +104,7 @@ class ProductController extends Controller
                     'products' => $databaseProducts->toArray(),
                     'error' => $e->getMessage(),
                     'last_sync' => now()->toDateTimeString(),
-                    'source' => 'database_fallback'
+                    'source' => 'database_fallback',
                 ],
             ]);
         }
@@ -133,15 +135,17 @@ class ProductController extends Controller
 
             if (! $response->successful()) {
                 Log::warning("Failed to fetch detail for Product ID {$productId}: " . $response->body());
+
                 return;
             }
 
             $data = $response->json();
             if (($data['code'] ?? -1) !== 0) {
                 Log::warning("TikTok detail error for {$productId}: " . ($data['message'] ?? 'Unknown'));
+
                 return;
             }
-            
+
             // Beberapa response TikTok menempatkan data di ['data']['product'] atau ['data']
             $detail = $data['data']['product'] ?? $data['data'] ?? null;
 
@@ -152,6 +156,7 @@ class ProductController extends Controller
             return $detail;
         } catch (Exception $e) {
             Log::error("Detail fetch exception for {$productId}: " . $e->getMessage());
+
             return;
         }
     }
@@ -166,7 +171,7 @@ class ProductController extends Controller
         }
 
         // Pastikan detail ter-decode
-        if (!empty($product['detail']) && is_string($product['detail'])) {
+        if (! empty($product['detail']) && is_string($product['detail'])) {
             $decoded = json_decode($product['detail'], true);
             if (json_last_error() === JSON_ERROR_NONE) {
                 $product['detail'] = $decoded;
@@ -175,8 +180,8 @@ class ProductController extends Controller
 
         $skuData = $product['skus'][0] ?? [];
         $firstInventory = $skuData['inventory'][0] ?? [];
-        $price = (int)($skuData['price']['tax_exclusive_price'] ?? 0);
-        $stock = (int)($firstInventory['quantity'] ?? 0);
+        $price = (int) ($skuData['price']['tax_exclusive_price'] ?? 0);
+        $stock = (int) ($firstInventory['quantity'] ?? 0);
 
         // Ambil semua gambar dari berbagai sumber
         $allImages = $this->extractAllImages($product);
@@ -206,9 +211,9 @@ class ProductController extends Controller
         $images = [];
 
         // 1️⃣ Gambar utama dari detail.main_images
-        if (!empty($product['detail']['main_images'])) {
+        if (! empty($product['detail']['main_images'])) {
             foreach ($product['detail']['main_images'] as $img) {
-                if (!empty($img['urls']) && is_array($img['urls'])) {
+                if (! empty($img['urls']) && is_array($img['urls'])) {
                     foreach ($img['urls'] as $url) {
                         $images[] = $url;
                     }
@@ -217,7 +222,7 @@ class ProductController extends Controller
         }
 
         // 2️⃣ Gambar dari size chart (jika ada)
-        if (!empty($product['detail']['size_chart']['image']['urls'])) {
+        if (! empty($product['detail']['size_chart']['image']['urls'])) {
             foreach ($product['detail']['size_chart']['image']['urls'] as $url) {
                 $images[] = $url;
             }
@@ -225,9 +230,9 @@ class ProductController extends Controller
 
         // 3️⃣ Fallback: jika ada key "images" atau "cover_images"
         foreach (['images', 'cover_images'] as $key) {
-            if (!empty($product[$key]) && is_array($product[$key])) {
+            if (! empty($product[$key]) && is_array($product[$key])) {
                 foreach ($product[$key] as $img) {
-                    if (is_array($img) && !empty($img['url'])) {
+                    if (is_array($img) && ! empty($img['url'])) {
                         $images[] = $img['url'];
                     } elseif (is_string($img)) {
                         $images[] = $img;
@@ -245,7 +250,6 @@ class ProductController extends Controller
     /**
      * Update stock from ERP to TikTok
      */
-
 
     // ======================= METODE LAINNYA YANG TETAP SAMA ======================= //
 
@@ -346,174 +350,176 @@ class ProductController extends Controller
         }
     }
 
-        private const TTS_API_VERSION = '202309';
+    private const TTS_API_VERSION = '202309';
 
-public function updateStock(Request $request)
-{
-    // 1) Validasi input
-    $validator = Validator::make($request->all(), [
-        'product_id'   => 'required|string',
-        'sku_id'       => 'required|string',
-        'warehouse_id' => 'required|string',
-        'new_stock'    => 'required|integer|min:0',
-    ]);
+    public function updateStock(Request $request)
+    {
+        // 1) Validasi input
+        $validator = Validator::make($request->all(), [
+            'product_id' => 'required|string',
+            'sku_id' => 'required|string',
+            'warehouse_id' => 'required|string',
+            'new_stock' => 'required|integer|min:0',
+        ]);
 
-    if ($validator->fails()) {
-        return response()->json([
-            'success' => false,
-            'message' => 'Data tidak valid: ' . $validator->errors()->first()
-        ], 400);
-    }
-
-    try {
-        $productId   = (string) $request->input('product_id');
-        $skuId       = (string) $request->input('sku_id');        // ID SKU TikTok
-        $warehouseId = (string) $request->input('warehouse_id');  // ID gudang TikTok
-        $newStock    = (int)    $request->input('new_stock');
-
-        // 2) Validasi lokal (opsional tapi membantu)
-        $product = Product::where('tiktok_product_id', $productId)->first();
-        if (! $product) {
-            return response()->json(['success' => false, 'message' => "Product not found: {$productId}"], 404);
-        }
-        $skusLocal = json_decode($product->skus ?? '[]', true);
-        $skuExists = collect(is_array($skusLocal) ? $skusLocal : [])->first(function ($s) use ($skuId) {
-            // Di DB terkadang tersimpan 'id' atau 'sku_id'
-            $sid = $s['id'] ?? $s['sku_id'] ?? null;
-            return $sid && (string)$sid === (string)$skuId;
-        });
-        if (! $skuExists) {
+        if ($validator->fails()) {
             return response()->json([
                 'success' => false,
-                'message' => "SKU {$skuId} tidak ditemukan pada product {$productId}"
+                'message' => 'Data tidak valid: ' . $validator->errors()->first(),
             ], 400);
         }
 
-        // 3) Kredensial TikTok
-        $accessToken = Authtentication::getTikTokAccessToken();
-        $appKey      = Setting::where('key', 'tiktok-app-key')->value('value');
-        $shopCipher  = Setting::where('key', 'tiktok-shop-cipher')->value('value');
+        try {
+            $productId = (string) $request->input('product_id');
+            $skuId = (string) $request->input('sku_id');        // ID SKU TikTok
+            $warehouseId = (string) $request->input('warehouse_id');  // ID gudang TikTok
+            $newStock = (int) $request->input('new_stock');
 
-        if (! $accessToken || ! $appKey || ! $shopCipher) {
-            return response()->json(['success' => false, 'message' => 'Missing TikTok API credentials'], 500);
-        }
+            // 2) Validasi lokal (opsional tapi membantu)
+            $product = Product::where('tiktok_product_id', $productId)->first();
+            if (! $product) {
+                return response()->json(['success' => false, 'message' => "Product not found: {$productId}"], 404);
+            }
+            $skusLocal = json_decode($product->skus ?? '[]', true);
+            $skuExists = collect(is_array($skusLocal) ? $skusLocal : [])->first(function ($s) use ($skuId) {
+                // Di DB terkadang tersimpan 'id' atau 'sku_id'
+                $sid = $s['id'] ?? $s['sku_id'] ?? null;
 
-        // 4) Endpoint & parameter
-        $apiVersion = '202309';
-        $path   = "/product/{$apiVersion}/products/{$productId}/inventory/update";
-        $params = [
-            'app_key'     => $appKey,
-            'shop_cipher' => $shopCipher,
-        ];
-        $url = "https://open-api.tiktokglobalshop.com{$path}";
+                return $sid && (string) $sid === (string) $skuId;
+            });
+            if (! $skuExists) {
+                return response()->json([
+                    'success' => false,
+                    'message' => "SKU {$skuId} tidak ditemukan pada product {$productId}",
+                ], 400);
+            }
 
-        // Helper untuk kirim request dengan signing yang konsisten
-        $sendSigned = function(array $body) use ($path, $params, $url, $accessToken) {
-            $bodyJson = json_encode($body, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
-            $signData = Authtentication::generateTikTokSignature($path, $params, $bodyJson);
-            $qs = $params + ['sign' => $signData['sign'], 'timestamp' => $signData['timestamp']];
+            // 3) Kredensial TikTok
+            $accessToken = Authtentication::getTikTokAccessToken();
+            $appKey = Setting::where('key', 'tiktok-app-key')->value('value');
+            $shopCipher = Setting::where('key', 'tiktok-shop-cipher')->value('value');
 
-            $resp = Http::withHeaders([
-                        'x-tts-access-token' => $accessToken,
-                        'Content-Type'       => 'application/json',
-                        'Accept'             => 'application/json',
-                    ])
+            if (! $accessToken || ! $appKey || ! $shopCipher) {
+                return response()->json(['success' => false, 'message' => 'Missing TikTok API credentials'], 500);
+            }
+
+            // 4) Endpoint & parameter
+            $apiVersion = '202309';
+            $path = "/product/{$apiVersion}/products/{$productId}/inventory/update";
+            $params = [
+                'app_key' => $appKey,
+                'shop_cipher' => $shopCipher,
+            ];
+            $url = "https://open-api.tiktokglobalshop.com{$path}";
+
+            // Helper untuk kirim request dengan signing yang konsisten
+            $sendSigned = function (array $body) use ($path, $params, $url, $accessToken) {
+                $bodyJson = json_encode($body, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+                $signData = Authtentication::generateTikTokSignature($path, $params, $bodyJson);
+                $qs = $params + ['sign' => $signData['sign'], 'timestamp' => $signData['timestamp']];
+
+                $resp = Http::withHeaders([
+                    'x-tts-access-token' => $accessToken,
+                    'Content-Type' => 'application/json',
+                    'Accept' => 'application/json',
+                ])
                     ->withQueryParameters($qs)
                     ->withBody($bodyJson, 'application/json')
                     ->timeout(30)
                     ->post($url);
 
-            return [$resp, $resp->json(), $body];
-        };
+                return [$resp, $resp->json(), $body];
+            };
 
-        // 5) Payload sesuai dokumen: gunakan 'id' pada skus[0]
-        $payloadQuantity = [
-            'skus' => [[
-                'id'        => $skuId,   // ← WAJIB pakai 'id', bukan 'sku_id'
-                'inventory' => [[
-                    'warehouse_id' => $warehouseId,
-                    'quantity'     => $newStock
-                ]]
-            ]],
-        ];
+            // 5) Payload sesuai dokumen: gunakan 'id' pada skus[0]
+            $payloadQuantity = [
+                'skus' => [[
+                    'id' => $skuId,   // ← WAJIB pakai 'id', bukan 'sku_id'
+                    'inventory' => [[
+                        'warehouse_id' => $warehouseId,
+                        'quantity' => $newStock,
+                    ]],
+                ]],
+            ];
 
-        [$resp1, $json1, $req1] = $sendSigned($payloadQuantity);
+            [$resp1, $json1, $req1] = $sendSigned($payloadQuantity);
 
-        if ($resp1->successful() && (($json1['code'] ?? -1) === 0)) {
-            $product->update(['stock' => $newStock, 'synced_at' => now()]);
-            return response()->json([
-                'success' => true,
-                'message' => 'Stok berhasil diupdate ke TikTok dan ERP',
-                'data'    => [
-                    'product_id'   => $productId,
-                    'sku_id'       => $skuId,
-                    'warehouse_id' => $warehouseId,
-                    'stock'        => $newStock,
-                ],
-                'tiktok' => $json1
+            if ($resp1->successful() && (($json1['code'] ?? -1) === 0)) {
+                $product->update(['stock' => $newStock, 'synced_at' => now()]);
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Stok berhasil diupdate ke TikTok dan ERP',
+                    'data' => [
+                        'product_id' => $productId,
+                        'sku_id' => $skuId,
+                        'warehouse_id' => $warehouseId,
+                        'stock' => $newStock,
+                    ],
+                    'tiktok' => $json1,
+                ]);
+            }
+
+            // 6) Fallback jika 'quantity' ditolak oleh tenant tertentu: gunakan 'available_stock'
+            $payloadAvailable = [
+                'skus' => [[
+                    'id' => $skuId,
+                    'inventory' => [[
+                        'warehouse_id' => $warehouseId,
+                        'available_stock' => $newStock,
+                    ]],
+                ]],
+            ];
+
+            [$resp2, $json2, $req2] = $sendSigned($payloadAvailable);
+
+            if ($resp2->successful() && (($json2['code'] ?? -1) === 0)) {
+                $product->update(['stock' => $newStock, 'synced_at' => now()]);
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Stok berhasil diupdate ke TikTok dan ERP',
+                    'data' => [
+                        'product_id' => $productId,
+                        'sku_id' => $skuId,
+                        'warehouse_id' => $warehouseId,
+                        'stock' => $newStock,
+                    ],
+                    'tiktok' => $json2,
+                ]);
+            }
+
+            // 7) Gagal: log lengkap untuk diagnosa
+            $httpStatus = $resp2->status() ?: $resp1->status();
+            $resBody = $json2 ?: $json1 ?: $resp2->body();
+
+            Log::error('TikTok inventory update failed', [
+                'product_id' => $productId,
+                'sku_id' => $skuId,
+                'warehouse' => $warehouseId,
+                'http_status' => $httpStatus,
+                'response' => $resBody,
+                'first_try' => $req1,
+                'second_try' => $req2,
             ]);
-        }
 
-        // 6) Fallback jika 'quantity' ditolak oleh tenant tertentu: gunakan 'available_stock'
-        $payloadAvailable = [
-            'skus' => [[
-                'id'        => $skuId,
-                'inventory' => [[
-                    'warehouse_id'    => $warehouseId,
-                    'available_stock' => $newStock
-                ]]
-            ]],
-        ];
+            $msg = is_array($resBody) ? ($resBody['message'] ?? 'Bad Request') : (string) $resBody;
 
-        [$resp2, $json2, $req2] = $sendSigned($payloadAvailable);
-
-        if ($resp2->successful() && (($json2['code'] ?? -1) === 0)) {
-            $product->update(['stock' => $newStock, 'synced_at' => now()]);
             return response()->json([
-                'success' => true,
-                'message' => 'Stok berhasil diupdate ke TikTok dan ERP',
-                'data'    => [
-                    'product_id'   => $productId,
-                    'sku_id'       => $skuId,
-                    'warehouse_id' => $warehouseId,
-                    'stock'        => $newStock,
-                ],
-                'tiktok' => $json2
-            ]);
+                'success' => false,
+                'message' => "HTTP error: {$httpStatus}" . ($msg ? " — {$msg}" : ''),
+                'tiktok' => $resBody,
+            ], 400);
+
+        } catch (Exception $e) {
+            Log::error('Update Stock Error: ' . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Terjadi kesalahan sistem: ' . $e->getMessage(),
+            ], 500);
         }
-
-        // 7) Gagal: log lengkap untuk diagnosa
-        $httpStatus = $resp2->status() ?: $resp1->status();
-        $resBody    = $json2 ?: $json1 ?: $resp2->body();
-
-        Log::error('TikTok inventory update failed', [
-            'product_id'  => $productId,
-            'sku_id'      => $skuId,
-            'warehouse'   => $warehouseId,
-            'http_status' => $httpStatus,
-            'response'    => $resBody,
-            'first_try'   => $req1,
-            'second_try'  => $req2,
-        ]);
-
-        $msg = is_array($resBody) ? ($resBody['message'] ?? 'Bad Request') : (string) $resBody;
-
-        return response()->json([
-            'success' => false,
-            'message' => "HTTP error: {$httpStatus}" . ($msg ? " — {$msg}" : ''),
-            'tiktok'  => $resBody
-        ], 400);
-
-    } catch (Exception $e) {
-        Log::error('Update Stock Error: '.$e->getMessage(), ['trace' => $e->getTraceAsString()]);
-        return response()->json([
-            'success' => false,
-            'message' => 'Terjadi kesalahan sistem: ' . $e->getMessage()
-        ], 500);
     }
-}
-
-
 
     /**
      * Batch update (aman, gak meledak karena method kosong)
@@ -523,10 +529,10 @@ public function updateStock(Request $request)
     {
         try {
             $accessToken = Authtentication::getTikTokAccessToken();
-            $appKey      = Setting::where('key', 'tiktok-app-key')->value('value');
-            $shopCipher  = Setting::where('key', 'tiktok-shop-cipher')->value('value');
+            $appKey = Setting::where('key', 'tiktok-app-key')->value('value');
+            $shopCipher = Setting::where('key', 'tiktok-shop-cipher')->value('value');
 
-            if (!$appKey || !$shopCipher || !$accessToken) {
+            if (! $appKey || ! $shopCipher || ! $accessToken) {
                 throw new Exception('Missing TikTok API credentials.');
             }
 
@@ -541,10 +547,11 @@ public function updateStock(Request $request)
 
             return response()->json([
                 'success' => true,
-                'message' => 'Inventory batch update diproses.'
+                'message' => 'Inventory batch update diproses.',
             ]);
         } catch (Exception $e) {
             Log::error('TikTok Inventory Update Error: ' . $e->getMessage());
+
             return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
         }
     }
@@ -555,73 +562,78 @@ public function updateStock(Request $request)
     private function updateSingleProductInventory($product, string $accessToken, string $appKey, string $shopCipher): void
     {
         $productId = (string) $product->tiktok_product_id;
-        $path = "/product/" . self::TTS_API_VERSION . "/products/{$productId}/inventory/update";
+        $path = '/product/' . self::TTS_API_VERSION . "/products/{$productId}/inventory/update";
 
         $skus = json_decode($product->skus ?? '[]', true);
-        if (!is_array($skus) || empty($skus)) {
+        if (! is_array($skus) || empty($skus)) {
             Log::warning("No SKUs for product {$productId}");
+
             return;
         }
 
         foreach ($skus as $sku) {
             $skuId = $sku['sku_id'] ?? $sku['id'] ?? null;
-            if (!$skuId) continue;
+            if (! $skuId) {
+                continue;
+            }
 
             $invList = $sku['stock_info'] ?? $sku['inventory'] ?? [];
-            if (!is_array($invList) || empty($invList)) {
+            if (! is_array($invList) || empty($invList)) {
                 Log::warning("No inventory slots for SKU {$skuId} product {$productId}");
                 continue;
             }
 
             foreach ($invList as $inv) {
                 $warehouseId = $inv['warehouse_id'] ?? null;
-                if (!$warehouseId) continue;
+                if (! $warehouseId) {
+                    continue;
+                }
 
-                $newStock = (int)($inv['available_stock'] ?? $inv['quantity'] ?? $product->stock ?? 0);
+                $newStock = (int) ($inv['available_stock'] ?? $inv['quantity'] ?? $product->stock ?? 0);
 
                 $params = [
-                    'app_key'     => $appKey,
+                    'app_key' => $appKey,
                     'shop_cipher' => $shopCipher,
                 ];
 
                 $bodyArray = [
-                    'product_id'     => $productId,
+                    'product_id' => $productId,
                     'inventory_list' => [[
-                        'sku_id'          => (string) $skuId,
-                        'warehouse_id'    => (string) $warehouseId,
+                        'sku_id' => (string) $skuId,
+                        'warehouse_id' => (string) $warehouseId,
                         'available_stock' => $newStock,
                     ]],
                 ];
                 $bodyJson = json_encode($bodyArray, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
 
                 $signData = Authtentication::generateTikTokSignature($path, $params, $bodyJson);
-                $params['sign']      = $signData['sign'];
+                $params['sign'] = $signData['sign'];
                 $params['timestamp'] = $signData['timestamp'];
 
                 $url = "https://open-api.tiktokglobalshop.com{$path}";
 
                 $res = Http::withHeaders([
-                        'x-tts-access-token' => $accessToken,
-                        'Content-Type'       => 'application/json'
-                    ])
+                    'x-tts-access-token' => $accessToken,
+                    'Content-Type' => 'application/json',
+                ])
                     ->withQueryParameters($params)
                     ->withBody($bodyJson, 'application/json')
                     ->timeout(30)
                     ->post($url);
 
                 $data = $res->json();
-                if (!$res->successful() || (($data['code'] ?? -1) !== 0)) {
+                if (! $res->successful() || (($data['code'] ?? -1) !== 0)) {
                     Log::error('Batch SKU update failed', [
-                        'product'   => $productId,
-                        'sku'       => $skuId,
+                        'product' => $productId,
+                        'sku' => $skuId,
                         'warehouse' => $warehouseId,
-                        'http'      => $res->status(),
-                        'body'      => $data,
+                        'http' => $res->status(),
+                        'body' => $data,
                     ]);
                 } else {
                     Log::info('Batch SKU updated', [
-                        'product'   => $productId,
-                        'sku'       => $skuId,
+                        'product' => $productId,
+                        'sku' => $skuId,
                         'warehouse' => $warehouseId,
                     ]);
                 }
@@ -630,6 +642,7 @@ public function updateStock(Request $request)
             }
         }
     }
+
     /**
      * Show the form for creating a new resource.
      */

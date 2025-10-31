@@ -16,10 +16,10 @@ class Kernel extends ConsoleKernel
         $schedule->call(function () {
             app(\App\Http\Controllers\ProductController::class)->index();
         })->hourly()
-          ->name('tiktok_auto_sync')
-          ->withoutOverlapping()
-          ->onOneServer()
-          ->appendOutputTo(storage_path('logs/tiktok_sync.log'));
+            ->name('tiktok_auto_sync')
+            ->withoutOverlapping()
+            ->onOneServer()
+            ->appendOutputTo(storage_path('logs/tiktok_sync.log'));
     }
 
     /**
@@ -28,12 +28,11 @@ class Kernel extends ConsoleKernel
     protected function commands(): void
     {
         // Daftarkan command custom dari folder Commands
-        $this->load(__DIR__.'/Commands');
+        $this->load(__DIR__ . '/Commands');
 
         // Tambahkan file routes/console.php jika ada
         if (file_exists(base_path('routes/console.php'))) {
             require base_path('routes/console.php');
         }
     }
-
 }

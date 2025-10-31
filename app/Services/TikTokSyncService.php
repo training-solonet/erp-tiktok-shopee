@@ -2,9 +2,9 @@
 
 namespace App\Services;
 
-use Exception;
-use App\Models\Setting;
 use App\Helpers\Authtentication;
+use App\Models\Setting;
+use Exception;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -20,7 +20,7 @@ class TikTokSyncService
             $appKey = Setting::where('key', 'tiktok-app-key')->value('value');
             $shopCipher = Setting::where('key', 'tiktok-shop-cipher')->value('value');
 
-            if (!$appKey || !$shopCipher) {
+            if (! $appKey || ! $shopCipher) {
                 throw new Exception('TikTok credentials not found');
             }
 
@@ -29,7 +29,7 @@ class TikTokSyncService
                 'sku_id' => $skuId,
                 'inventory' => [
                     [
-                        'available_stock' => (int)$newStock,
+                        'available_stock' => (int) $newStock,
                         'warehouse_id' => $warehouseId,
                     ],
                 ],
@@ -51,14 +51,14 @@ class TikTokSyncService
                 'url' => $url,
                 'product_id' => $productId,
                 'sku_id' => $skuId,
-                'new_stock' => $newStock
+                'new_stock' => $newStock,
             ]);
 
             $response = Http::timeout(30)
                 ->asJson()
                 ->withHeaders([
                     'x-tts-access-token' => $accessToken,
-                    'Content-Type' => 'application/json'
+                    'Content-Type' => 'application/json',
                 ])
                 ->withQueryParameters($params)
                 ->post($url, $bodyArray);
@@ -68,14 +68,14 @@ class TikTokSyncService
             Log::info('TikTok API response', [
                 'product_id' => $productId,
                 'response_code' => $result['code'] ?? 'unknown',
-                'response_message' => $result['message'] ?? 'No message'
+                'response_message' => $result['message'] ?? 'No message',
             ]);
 
             if (($result['code'] ?? -1) === 0) {
                 return [
                     'success' => true,
                     'message' => 'TikTok sync successful',
-                    'response' => $result
+                    'response' => $result,
                 ];
             } else {
                 $errorMessage = $result['message'] ?? 'Unknown TikTok API error';
@@ -86,12 +86,12 @@ class TikTokSyncService
             Log::error('TikTok sync service error: ' . $e->getMessage(), [
                 'product_id' => $productId,
                 'sku_id' => $skuId,
-                'warehouse_id' => $warehouseId
+                'warehouse_id' => $warehouseId,
             ]);
 
             return [
                 'success' => false,
-                'message' => 'TikTok sync failed: ' . $e->getMessage()
+                'message' => 'TikTok sync failed: ' . $e->getMessage(),
             ];
         }
     }
