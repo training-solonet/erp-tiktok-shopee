@@ -29,8 +29,6 @@
         .text-primary { color: #8B4513; }
         .border-primary { border-color: #8B4513; }
         .hover\:bg-primary:hover { background-color: #654321; }
-        .from-primary { --tw-gradient-from: #8B4513; }
-        .to-primary-600 { --tw-gradient-to: #654321; }
 
         .transition-all {
             transition: all 0.3s ease-in-out;
@@ -131,6 +129,18 @@
             transform: scale(1);
         }
 
+        /* Loading skeleton */
+        .skeleton {
+            background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+            background-size: 200% 100%;
+            animation: loading 1.5s infinite;
+        }
+
+        @keyframes loading {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+
         /* Mobile responsive adjustments */
         @media (max-width: 1024px) {
             .content-container {
@@ -145,34 +155,28 @@
         <div class="p-6 h-full flex flex-col">
             <!-- Logo Section -->
             <div class="mb-8">
-                <h1 class="text-xl font-display font-bold text-primary">Camellia Boutique99</h1>
+                <h1 class="text-xl font-bold text-amber-800">Camellia Boutique99</h1>
                 <p class="text-xs text-gray-600 mt-1">ERP Management System</p>
             </div>
             
             <!-- Navigation Menu -->
             <ul class="space-y-2 flex-1">
                 <li>
-                    <a href="{{ route('dashboard_menu') }}" 
-                       class="nav-item flex items-center px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg transition-all duration-300 active"
-                       data-route="dashboard">
-                       <i class='bx bx-home text-lg mr-3'></i>
-                       <span class="font-medium">Dashboard</span>
+                    <a href="{{ route('dashboard.index') }}" class="nav-item flex items-center px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg transition-all duration-300 active">
+                        <i class='bx bx-home text-lg mr-3'></i>
+                        <span class="font-medium">Dashboard</span>
                     </a>
                 </li>
                 <li>
-                    <a href="{{ route('products_menu') }}" 
-                       class="nav-item flex items-center px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg transition-all duration-300"
-                       data-route="products">
-                       <i class='bx bx-package text-lg mr-3'></i>
-                       <span class="font-medium">Products</span>
+                    <a href="{{ route('products_menu') }}" class="nav-item flex items-center px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg transition-all duration-300">
+                        <i class='bx bx-package text-lg mr-3'></i>
+                        <span class="font-medium">Products</span>
                     </a>
                 </li>
                 <li>
-                    <a href="{{ route('orders_menu') }}" 
-                       class="nav-item flex items-center px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg transition-all duration-300"
-                       data-route="orders">
-                       <i class='bx bx-cart-alt text-lg mr-3'></i>
-                       <span class="font-medium">Orders</span>
+                    <a href="{{ route('orders_menu') }}" class="nav-item flex items-center px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg transition-all duration-300">
+                        <i class='bx bx-cart-alt text-lg mr-3'></i>
+                        <span class="font-medium">Orders</span>
                     </a>
                 </li>
             </ul>
@@ -180,16 +184,13 @@
             <!-- User Section -->
             <div class="pt-6 border-t border-gray-200">
                 <div class="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
-                    <div class="w-8 h-8 bg-primary rounded-full flex items-center justify-center text-white text-sm font-semibold">
+                    <div class="w-8 h-8 bg-amber-800 rounded-full flex items-center justify-center text-white text-sm font-semibold">
                         BS
                     </div>
                     <div class="flex-1 min-w-0">
                         <p class="text-sm font-medium text-gray-900 truncate">Butik Solo</p>
                         <p class="text-xs text-gray-500 truncate">Administrator</p>
                     </div>
-                    <button class="p-1 text-gray-400 hover:text-gray-600 transition-colors">
-                        <i class='bx bx-log-out text-lg'></i>
-                    </button>
                 </div>
             </div>
         </div>
@@ -198,7 +199,7 @@
     <!-- Mobile Menu Button -->
     <div class="lg:hidden fixed top-4 left-4 z-50">
         <button id="mobileMenuButton" class="p-2 bg-white rounded-lg shadow-lg hover:shadow-xl transition-shadow">
-            <i class='bx bx-menu text-xl text-primary'></i>
+            <i class='bx bx-menu text-xl text-amber-800'></i>
         </button>
     </div>
 
@@ -273,7 +274,7 @@
                     <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between relative z-10">
                         <div class="mb-6 lg:mb-0">
                             <h1 class="text-3xl font-bold mb-2">Selamat Datang di Camellia Boutique99</h1>
-                            <p class="text-amber-100 text-lg mb-1">Sistem Manajemen</p>
+                            <p class="text-amber-100 text-lg mb-1">Dashboard Management System</p>
                             <p class="text-amber-200 text-sm" id="currentDateTime">Memuat...</p>
                         </div>
                         <div class="flex items-center space-x-3">
@@ -290,19 +291,19 @@
                     <!-- Quick Stats Bar -->
                     <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
                         <div class="text-center">
-                            <div class="text-2xl font-bold">{{ number_format($total_products) }}</div>
+                            <div class="text-2xl font-bold" id="welcomeTotalProducts">{{ number_format($total_products) }}</div>
                             <div class="text-amber-200 text-xs">Total Produk</div>
                         </div>
                         <div class="text-center">
-                            <div class="text-2xl font-bold">{{ number_format($active_orders) }}</div>
+                            <div class="text-2xl font-bold" id="welcomeActiveOrders">{{ number_format($active_orders) }}</div>
                             <div class="text-amber-200 text-xs">Pesanan Aktif</div>
                         </div>
                         <div class="text-center">
-                            <div class="text-lg font-bold">Rp {{ number_format($monthly_revenue, 0, ',', '.') }}</div>
+                            <div class="text-lg font-bold" id="welcomeMonthlyRevenue">Rp {{ number_format($monthly_revenue, 0, ',', '.') }}</div>
                             <div class="text-amber-200 text-xs">Pendapatan Bulanan</div>
                         </div>
                         <div class="text-center">
-                            <div class="text-lg font-bold">Rp {{ number_format($inventory_value, 0, ',', '.') }}</div>
+                            <div class="text-lg font-bold" id="welcomeInventoryValue">Rp {{ number_format($inventory_value, 0, ',', '.') }}</div>
                             <div class="text-amber-200 text-xs">Nilai Inventori</div>
                         </div>
                     </div>
@@ -311,7 +312,7 @@
                 <!-- Key Metrics Grid -->
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
                     <!-- Total Products -->
-                    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 hover:shadow-md transition-all duration-300 group hover:-translate-y-1 cursor-pointer" onclick="refreshMetrics()">
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 hover:shadow-md transition-all duration-300 group hover:-translate-y-1 cursor-pointer" onclick="refreshMetrics('products')">
                         <div class="flex items-center justify-between">
                             <div>
                                 <p class="text-gray-500 text-xs font-medium mb-1 uppercase tracking-wide">Total Produk</p>
@@ -326,53 +327,8 @@
                             </div>
                         </div>
                         <div class="mt-3 pt-3 border-t border-gray-100 flex justify-between items-center">
-                            <span class="text-xs text-gray-500">Terakhir diperbarui</span>
-                            <span class="text-xs text-gray-400" id="productsUpdateTime">Baru saja</span>
-                        </div>
-                    </div>
-
-                    <!-- Active Orders -->
-                    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 hover:shadow-md transition-all duration-300 group hover:-translate-y-1">
-                        <div class="flex items-center justify-between">
-                            <div>
-                                <p class="text-gray-500 text-xs font-medium mb-1 uppercase tracking-wide">Pesanan Aktif</p>
-                                <p class="text-2xl font-bold text-gray-900 mb-1" id="activeOrders">{{ number_format($active_orders) }}</p>
-                                <p class="text-xs text-blue-600 flex items-center">
-                                    <i class='bx bx-time mr-1'></i>
-                                    <span id="pendingShipment">{{ number_format($pending_shipment) }}</span> tertunda
-                                </p>
-                            </div>
-                            <div class="w-12 h-12 bg-green-50 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-                                <i class='bx bx-cart-alt text-green-500 text-xl'></i>
-                            </div>
-                        </div>
-                        <div class="mt-3 pt-3 border-t border-gray-100">
-                            <div class="flex justify-between text-xs text-gray-500">
-                                <span>Selesai: {{ number_format($active_orders - $pending_shipment) }}</span>
-                                <span class="text-emerald-600">+12%</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Monthly Revenue -->
-                    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 hover:shadow-md transition-all duration-300 group hover:-translate-y-1">
-                        <div class="flex items-center justify-between">
-                            <div>
-                                <p class="text-gray-500 text-xs font-medium mb-1 uppercase tracking-wide">Pendapatan Bulanan</p>
-                                <p class="text-xl font-bold text-gray-900 mb-1">Rp <span id="monthlyRevenue">{{ number_format($monthly_revenue, 0, ',', '.') }}</span></p>
-                                <p class="text-xs text-amber-600 flex items-center">
-                                    <i class='bx bx-trending-up mr-1'></i>
-                                    <span id="revenueGrowth">18%</span> pertumbuhan
-                                </p>
-                            </div>
-                            <div class="w-12 h-12 bg-amber-50 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-                                <i class='bx bx-dollar-circle text-amber-500 text-xl'></i>
-                            </div>
-                        </div>
-                        <div class="mt-3 pt-3 border-t border-gray-100">
-                            <div class="w-full bg-gray-200 rounded-full h-1.5">
-                                <div class="bg-amber-500 h-1.5 rounded-full" style="width: 75%"></div>
-                            </div>
+                            <span class="text-xs text-gray-500">Sumber Data</span>
+                            <span class="text-xs text-gray-400" id="dataSource">{{ $data_source ?? 'database' }}</span>
                         </div>
                     </div>
 
@@ -393,7 +349,52 @@
                         </div>
                         <div class="mt-3 pt-3 border-t border-gray-100">
                             <div class="flex justify-between text-xs text-gray-500">
-                                <span>Rata-rata nilai: Rp {{ number_format($total_products > 0 ? $inventory_value / $total_products : 0, 0, ',', '.') }}</span>
+                                <span>Rata-rata: Rp {{ number_format($total_products > 0 ? $inventory_value / $total_products : 0, 0, ',', '.') }}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Active Orders -->
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 hover:shadow-md transition-all duration-300 group hover:-translate-y-1 cursor-pointer" onclick="refreshMetrics('orders')">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-gray-500 text-xs font-medium mb-1 uppercase tracking-wide">Pesanan Aktif</p>
+                                <p class="text-2xl font-bold text-gray-900 mb-1" id="activeOrders">{{ number_format($active_orders) }}</p>
+                                <p class="text-xs text-blue-600 flex items-center">
+                                    <i class='bx bx-time mr-1'></i>
+                                    <span id="pendingShipment">{{ number_format($pending_shipment) }}</span> tertunda
+                                </p>
+                            </div>
+                            <div class="w-12 h-12 bg-green-50 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                                <i class='bx bx-cart-alt text-green-500 text-xl'></i>
+                            </div>
+                        </div>
+                        <div class="mt-3 pt-3 border-t border-gray-100">
+                            <div class="flex justify-between text-xs text-gray-500">
+                                <span>Selesai: {{ number_format($active_orders - $pending_shipment) }}</span>
+                                <span class="text-emerald-600">Live Data</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Monthly Revenue -->
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 hover:shadow-md transition-all duration-300 group hover:-translate-y-1">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-gray-500 text-xs font-medium mb-1 uppercase tracking-wide">Pendapatan Bulanan</p>
+                                <p class="text-xl font-bold text-gray-900 mb-1">Rp <span id="monthlyRevenue">{{ number_format($monthly_revenue, 0, ',', '.') }}</span></p>
+                                <p class="text-xs text-amber-600 flex items-center">
+                                    <i class='bx bx-trending-up mr-1'></i>
+                                    <span id="revenueGrowth">Estimasi</span> real-time
+                                </p>
+                            </div>
+                            <div class="w-12 h-12 bg-amber-50 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                                <i class='bx bx-dollar-circle text-amber-500 text-xl'></i>
+                            </div>
+                        </div>
+                        <div class="mt-3 pt-3 border-t border-gray-100">
+                            <div class="text-xs text-gray-500 text-center">
+                                Data estimasi dari pesanan
                             </div>
                         </div>
                     </div>
@@ -422,7 +423,7 @@
                             </div>
                             
                             <div class="space-y-3" id="ordersContainer">
-                                @if(isset($recent_orders) && count($recent_orders) > 0)
+                                @if(count($recent_orders) > 0)
                                     @foreach($recent_orders as $order)
                                     <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors duration-200 border border-gray-200 order-item">
                                         <div class="flex items-center space-x-4 flex-1">
@@ -435,7 +436,7 @@
                                             </div>
                                         </div>
                                         <div class="text-right">
-                                            <span class="font-semibold text-gray-900 block text-sm">Rp {{ number_format($order['payment']['total_amount'] ?? 0) }}</span>
+                                            <span class="font-semibold text-gray-900 block text-sm">Rp {{ number_format($order['payment']['total_amount'] ?? 0, 0, ',', '.') }}</span>
                                             <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium status-badge 
                                                 @if(($order['status'] ?? '') === 'completed') bg-emerald-100 text-emerald-800 border border-emerald-200
                                                 @elseif(($order['status'] ?? '') === 'processing') bg-blue-100 text-blue-800 border border-blue-200
@@ -554,25 +555,25 @@
                                         <span>{{ number_format($total_stock) }} item</span>
                                     </div>
                                     <div class="w-full bg-gray-200 rounded-full h-2">
-                                        <div class="bg-emerald-500 h-2 rounded-full" style="width: 85%"></div>
+                                        <div class="bg-emerald-500 h-2 rounded-full" style="width: {{ $total_stock > 0 ? 85 : 0 }}%"></div>
                                     </div>
                                 </div>
                                 <div>
                                     <div class="flex justify-between text-sm text-gray-600 mb-2">
                                         <span>Stok Menipis</span>
-                                        <span>{{ number_format(max(0, $total_stock * 0.1)) }} item</span>
+                                        <span>{{ number_format($low_stock_products) }} item</span>
                                     </div>
                                     <div class="w-full bg-gray-200 rounded-full h-2">
-                                        <div class="bg-amber-500 h-2 rounded-full" style="width: 10%"></div>
+                                        <div class="bg-amber-500 h-2 rounded-full" style="width: {{ $total_products > 0 ? ($low_stock_products / $total_products) * 100 : 0 }}%"></div>
                                     </div>
                                 </div>
                                 <div>
                                     <div class="flex justify-between text-sm text-gray-600 mb-2">
                                         <span>Habis</span>
-                                        <span>{{ number_format(max(0, $total_stock * 0.05)) }} item</span>
+                                        <span>{{ number_format($out_of_stock_products) }} item</span>
                                     </div>
                                     <div class="w-full bg-gray-200 rounded-full h-2">
-                                        <div class="bg-red-500 h-2 rounded-full" style="width: 5%"></div>
+                                        <div class="bg-red-500 h-2 rounded-full" style="width: {{ $total_products > 0 ? ($out_of_stock_products / $total_products) * 100 : 0 }}%"></div>
                                     </div>
                                 </div>
                             </div>
@@ -583,20 +584,18 @@
                             <h3 class="text-lg font-semibold text-gray-900 mb-4">Status Sistem</h3>
                             <div class="space-y-3">
                                 <div class="flex items-center justify-between">
-                                    <span class="text-sm text-gray-600">TikTok API</span>
+                                    <span class="text-sm text-gray-600">Database Produk</span>
                                     <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800">
-                                        <i class='bx bx-check-circle mr-1'></i>Terkoneksi
+                                        <i class='bx bx-check-circle mr-1'></i>Aktif
                                     </span>
                                 </div>
                                 <div class="flex items-center justify-between">
-                                    <span class="text-sm text-gray-600">Database</span>
-                                    <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800">
-                                        <i class='bx bx-check-circle mr-1'></i>Online
-                                    </span>
+                                    <span class="text-sm text-gray-600">Total Data</span>
+                                    <span class="text-sm text-gray-900">{{ number_format($total_products) }} produk</span>
                                 </div>
                                 <div class="flex items-center justify-between">
-                                    <span class="text-sm text-gray-600">Sinkronisasi Terakhir</span>
-                                    <span class="text-sm text-gray-900" id="lastSyncTime">Baru saja</span>
+                                    <span class="text-sm text-gray-600">Update Terakhir</span>
+                                    <span class="text-sm text-gray-900" id="lastSyncTime">{{ $last_updated }}</span>
                                 </div>
                             </div>
                         </div>
@@ -615,7 +614,7 @@
         let selectedPeriod = '7';
         let exportData = {};
 
-        // Data dari PHP/Laravel
+        // Data dari PHP/Laravel - dengan fallback yang aman
         const dashboardData = {
             total_products: {{ $total_products }},
             active_products: {{ $active_products }},
@@ -625,8 +624,15 @@
             pending_shipment: {{ $pending_shipment }},
             monthly_revenue: {{ $monthly_revenue }},
             total_revenue: {{ $total_revenue ?? 0 }},
-            recent_orders: @json($recent_orders ?? [])
+            recent_orders: @json($recent_orders ?? []),
+            // Data tambahan dari controller baru
+            low_stock_products: {{ $low_stock_products ?? 0 }},
+            out_of_stock_products: {{ $out_of_stock_products ?? 0 }},
+            data_source: "{{ $data_source ?? 'database' }}",
+            last_updated: "{{ $last_updated ?? now()->toDateTimeString() }}"
         };
+
+        console.log('Dashboard Data Loaded:', dashboardData);
 
         document.addEventListener('DOMContentLoaded', function() {
             initializeDashboard();
@@ -648,22 +654,21 @@
                 });
             }
 
-            // Close mobile menu when clicking on nav items (mobile devices)
-            navItems.forEach(item => {
-                item.addEventListener('click', function() {
-                    if (window.innerWidth < 1024) {
+            // Close mobile menu when clicking outside (mobile devices)
+            document.addEventListener('click', function(event) {
+                if (window.innerWidth < 1024) {
+                    const isClickInsideSidebar = sidebar.contains(event.target);
+                    const isClickOnMenuButton = mobileMenuButton.contains(event.target);
+                    
+                    if (!isClickInsideSidebar && !isClickOnMenuButton) {
                         sidebar.classList.add('-translate-x-full');
                     }
-                });
+                }
             });
 
             // Handle active state based on current URL
             function setActiveNav() {
                 const currentPath = window.location.pathname;
-                const currentHash = window.location.hash;
-                
-                console.log('Current Path:', currentPath);
-                console.log('Current Hash:', currentHash);
                 
                 // Reset semua active state
                 navItems.forEach(item => {
@@ -671,48 +676,22 @@
                 });
                 
                 // Logic untuk menentukan menu aktif
-                if (currentPath.includes('/products') || currentHash === '#products') {
-                    // Products page
-                    document.querySelector('[data-route="products"]').classList.add('active');
-                    console.log('Setting active: Products');
-                } else if (currentPath.includes('/orders') || currentHash === '#orders') {
-                    // Orders page  
-                    document.querySelector('[data-route="orders"]').classList.add('active');
-                    console.log('Setting active: Orders');
-                } else if (currentPath.includes('/dashboard') || currentPath === '/' || currentHash === '#dashboard' || currentHash === '') {
-                    // Dashboard page (default)
-                    document.querySelector('[data-route="dashboard"]').classList.add('active');
-                    console.log('Setting active: Dashboard');
-                }
-                
-                // Fallback: Jika tidak ada yang match, set dashboard sebagai default
-                const activeItems = document.querySelectorAll('.nav-item.active');
-                if (activeItems.length === 0) {
-                    document.querySelector('[data-route="dashboard"]').classList.add('active');
-                    console.log('Fallback: Setting active: Dashboard');
+                if (currentPath.includes('/products')) {
+                    document.querySelector('[href="{{ route('products_menu') }}"]').classList.add('active');
+                } else if (currentPath.includes('/orders')) {
+                    document.querySelector('[href="{{ route('orders_menu') }}"]').classList.add('active');
+                } else {
+                    document.querySelector('[href="{{ route('dashboard.index') }}"]').classList.add('active');
                 }
             }
 
             // Panggil function saat load
             setActiveNav();
-            
-            // Juga panggil saat URL berubah (untuk single page application behavior)
-            window.addEventListener('popstate', setActiveNav);
-            
-            // Untuk handle hash changes
-            window.addEventListener('hashchange', setActiveNav);
         }
 
         function initializeDashboard() {
             updateDateTime();
             setInterval(updateDateTime, 1000);
-            // Update UI dengan data dari controller
-            updateDashboardUI();
-        }
-
-        function updateDashboardUI() {
-            // Data sudah ditampilkan langsung dari PHP Blade
-            // Fungsi ini untuk update real-time jika diperlukan
         }
 
         function updateDateTime() {
@@ -734,10 +713,16 @@
 
         function setupEventListeners() {
             // Refresh orders button
-            document.getElementById('refreshOrders').addEventListener('click', refreshOrders);
+            const refreshOrdersBtn = document.getElementById('refreshOrders');
+            if (refreshOrdersBtn) {
+                refreshOrdersBtn.addEventListener('click', refreshOrders);
+            }
             
             // Platform period filter
-            document.getElementById('platformPeriod').addEventListener('change', updatePlatformStats);
+            const platformPeriod = document.getElementById('platformPeriod');
+            if (platformPeriod) {
+                platformPeriod.addEventListener('change', updatePlatformStats);
+            }
             
             // Auto-refresh toggle
             document.addEventListener('visibilitychange', handleVisibilityChange);
@@ -745,10 +730,17 @@
 
         function setupExportEventListeners() {
             // Modal events
-            document.getElementById('closeModal').addEventListener('click', hideExportModal);
-            document.getElementById('exportModal').addEventListener('click', function(e) {
-                if (e.target === this) hideExportModal();
-            });
+            const closeModalBtn = document.getElementById('closeModal');
+            if (closeModalBtn) {
+                closeModalBtn.addEventListener('click', hideExportModal);
+            }
+
+            const exportModal = document.getElementById('exportModal');
+            if (exportModal) {
+                exportModal.addEventListener('click', function(e) {
+                    if (e.target === this) hideExportModal();
+                });
+            }
 
             // Period buttons
             const periodButtons = document.querySelectorAll('.export-period-btn');
@@ -767,8 +759,15 @@
             });
 
             // Export buttons
-            document.getElementById('exportPdf').addEventListener('click', exportToPdf);
-            document.getElementById('exportExcel').addEventListener('click', exportToExcel);
+            const exportPdfBtn = document.getElementById('exportPdf');
+            if (exportPdfBtn) {
+                exportPdfBtn.addEventListener('click', exportToPdf);
+            }
+
+            const exportExcelBtn = document.getElementById('exportExcel');
+            if (exportExcelBtn) {
+                exportExcelBtn.addEventListener('click', exportToExcel);
+            }
         }
 
         function handleVisibilityChange() {
@@ -780,41 +779,152 @@
         }
 
         function startAutoRefresh() {
+            // Refresh setiap 2 menit
             refreshInterval = setInterval(() => {
-                refreshMetrics();
-            }, 30000); // 30 seconds
+                refreshAllData();
+            }, 120000);
         }
 
         // Main refresh function
-        function refreshAllData() {
+        async function refreshAllData() {
             showNotification('Menyegarkan semua data...', 'info');
-            refreshMetrics();
-            refreshOrders();
-            updatePlatformStats();
+            
+            try {
+                const response = await fetch('/api/dashboard/data');
+                const result = await response.json();
+                
+                if (result.success) {
+                    updateDashboardUI(result.data);
+                    showNotification('Data berhasil diperbarui', 'success');
+                } else {
+                    showNotification('Gagal memperbarui data: ' + result.error, 'error');
+                }
+            } catch (error) {
+                console.error('Refresh error:', error);
+                showNotification('Error jaringan saat memperbarui data', 'error');
+            }
         }
 
-        function refreshMetrics() {
-            const metrics = document.querySelectorAll('.bg-white.rounded-xl');
-            metrics.forEach(metric => {
-                metric.classList.add('pulse');
-            });
+        // Refresh specific metrics
+        async function refreshMetrics(type = 'all') {
+            const metrics = type === 'all' ? ['products', 'orders'] : [type];
             
-            // Simulate API call
-            setTimeout(() => {
-                metrics.forEach(metric => {
-                    metric.classList.remove('pulse');
+            showNotification(`Memperbarui data ${type}...`, 'info');
+            
+            try {
+                const response = await fetch('/api/dashboard/refresh', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                    },
+                    body: JSON.stringify({ metrics })
                 });
                 
-                // Update timestamps
-                const now = new Date();
-                document.getElementById('productsUpdateTime').textContent = 'Baru saja';
-                document.getElementById('lastSyncTime').textContent = now.toLocaleTimeString('id-ID');
+                const result = await response.json();
                 
-                showNotification('Metrik berhasil diperbarui', 'success');
-            }, 1000);
+                if (result.success) {
+                    updateDashboardUI(result.data);
+                    showNotification(`Data ${type} berhasil diperbarui`, 'success');
+                } else {
+                    showNotification(`Gagal memperbarui ${type}: ` + result.error, 'error');
+                }
+            } catch (error) {
+                console.error('Refresh metrics error:', error);
+                showNotification('Error jaringan saat memperbarui data', 'error');
+            }
         }
 
-        function refreshOrders() {
+        // Update UI dengan data baru
+        function updateDashboardUI(data) {
+            // Update welcome section
+            if (data.total_products !== undefined) {
+                document.getElementById('welcomeTotalProducts').textContent = data.total_products.toLocaleString();
+                document.getElementById('totalProducts').textContent = data.total_products.toLocaleString();
+                document.getElementById('activeProductsCount').textContent = data.active_products.toLocaleString();
+            }
+            
+            if (data.active_orders !== undefined) {
+                document.getElementById('welcomeActiveOrders').textContent = data.active_orders.toLocaleString();
+                document.getElementById('activeOrders').textContent = data.active_orders.toLocaleString();
+                document.getElementById('pendingShipment').textContent = data.pending_shipment.toLocaleString();
+            }
+            
+            if (data.monthly_revenue !== undefined) {
+                document.getElementById('welcomeMonthlyRevenue').textContent = 'Rp ' + data.monthly_revenue.toLocaleString('id-ID');
+                document.getElementById('monthlyRevenue').textContent = data.monthly_revenue.toLocaleString('id-ID');
+            }
+            
+            if (data.inventory_value !== undefined) {
+                document.getElementById('welcomeInventoryValue').textContent = 'Rp ' + data.inventory_value.toLocaleString('id-ID');
+                document.getElementById('inventoryValue').textContent = data.inventory_value.toLocaleString('id-ID');
+                document.getElementById('totalStock').textContent = data.total_stock.toLocaleString();
+            }
+            
+            // Update recent orders
+            if (data.recent_orders && data.recent_orders.length > 0) {
+                updateOrdersList(data.recent_orders);
+            }
+            
+            // Update timestamp
+            document.getElementById('lastSyncTime').textContent = new Date().toLocaleString('id-ID');
+        }
+
+        function updateOrdersList(orders) {
+            const container = document.getElementById('ordersContainer');
+            const noOrders = document.getElementById('noOrders');
+            
+            if (orders.length === 0) {
+                if (noOrders) {
+                    noOrders.classList.remove('hidden');
+                }
+                container.innerHTML = '';
+                return;
+            }
+            
+            if (noOrders) {
+                noOrders.classList.add('hidden');
+            }
+            
+            let ordersHTML = '';
+            orders.forEach(order => {
+                const statusClass = {
+                    'completed': 'bg-emerald-100 text-emerald-800 border border-emerald-200',
+                    'processing': 'bg-blue-100 text-blue-800 border border-blue-200',
+                    'pending': 'bg-amber-100 text-amber-800 border border-amber-200'
+                }[order.status] || 'bg-gray-100 text-gray-800 border border-gray-200';
+                
+                const statusText = {
+                    'completed': 'Selesai',
+                    'processing': 'Diproses',
+                    'pending': 'Tertunda'
+                }[order.status] || 'Tidak Diketahui';
+                
+                ordersHTML += `
+                    <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors duration-200 border border-gray-200 order-item fade-in">
+                        <div class="flex items-center space-x-4 flex-1">
+                            <div class="w-10 h-10 bg-white rounded-lg border border-gray-200 flex items-center justify-center shadow-sm">
+                                <i class='bx bx-receipt text-amber-500'></i>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <h4 class="font-medium text-gray-800 text-sm">${order.id}</h4>
+                                <p class="text-sm text-gray-600 truncate">${order.recipient_address?.name || 'Pelanggan'}</p>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <span class="font-semibold text-gray-900 block text-sm">Rp ${(order.payment?.total_amount || 0).toLocaleString('id-ID')}</span>
+                            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium status-badge ${statusClass}">
+                                ${statusText}
+                            </span>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            container.innerHTML = ordersHTML;
+        }
+
+        async function refreshOrders() {
             const container = document.getElementById('ordersContainer');
             const loading = document.getElementById('ordersLoading');
             const noOrders = document.getElementById('noOrders');
@@ -824,20 +934,33 @@
             loading.classList.remove('hidden');
             if (noOrders) noOrders.classList.add('hidden');
             
-            // Simulate API call
-            setTimeout(() => {
+            try {
+                const response = await fetch('/api/dashboard/refresh', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                    },
+                    body: JSON.stringify({ metrics: ['orders'] })
+                });
+                
+                const result = await response.json();
+                
                 loading.classList.add('hidden');
                 container.classList.remove('hidden');
                 
-                // Add fade-in animation to orders
-                const orderItems = document.querySelectorAll('.order-item');
-                orderItems.forEach((item, index) => {
-                    item.style.animationDelay = `${index * 0.1}s`;
-                    item.classList.add('fade-in');
-                });
-                
-                showNotification('Pesanan berhasil disegarkan', 'success');
-            }, 1500);
+                if (result.success && result.data.recent_orders) {
+                    updateOrdersList(result.data.recent_orders);
+                    showNotification('Pesanan berhasil disegarkan', 'success');
+                } else {
+                    showNotification('Gagal memuat pesanan', 'error');
+                }
+            } catch (error) {
+                console.error('Refresh orders error:', error);
+                loading.classList.add('hidden');
+                container.classList.remove('hidden');
+                showNotification('Error jaringan saat memuat pesanan', 'error');
+            }
         }
 
         function updatePlatformStats() {
@@ -863,7 +986,7 @@
 
         function showExportModal() {
             document.getElementById('exportModal').classList.add('active');
-            prepareExportData(); // Refresh data sebelum ekspor
+            prepareExportData();
         }
 
         function hideExportModal() {
@@ -871,7 +994,6 @@
         }
 
         function prepareExportData() {
-            // Mengumpulkan data real-time dari dashboard controller
             const currentDate = new Date();
             const periodDays = parseInt(selectedPeriod);
             const startDate = new Date();
@@ -880,10 +1002,9 @@
             exportData = {
                 company: {
                     name: "Camellia Boutique99",
-                    address: "Jl. Contoh No. 123, Jakarta",
+                    address: "Jl. Solo Jala Buana No. 78",
                     phone: "+62 812-3456-7890"
                 },
-                
                 report: {
                     title: "Laporan Kinerja Bisnis",
                     period: `${startDate.toLocaleDateString('id-ID')} - ${currentDate.toLocaleDateString('id-ID')}`,
@@ -896,7 +1017,9 @@
                     pendingShipment: dashboardData.pending_shipment.toLocaleString(),
                     monthlyRevenue: 'Rp ' + dashboardData.monthly_revenue.toLocaleString('id-ID'),
                     inventoryValue: 'Rp ' + dashboardData.inventory_value.toLocaleString('id-ID'),
-                    totalStock: dashboardData.total_stock.toLocaleString()
+                    totalStock: dashboardData.total_stock.toLocaleString(),
+                    lowStockProducts: dashboardData.low_stock_products.toLocaleString(),
+                    outOfStockProducts: dashboardData.out_of_stock_products.toLocaleString()
                 },
                 platformPerformance: [
                     { platform: 'TikTok Shop', orders: 156, growth: '+18%', percentage: 52 },
@@ -910,9 +1033,9 @@
                     status: order.status
                 })),
                 inventoryHealth: [
-                    { category: 'Tersedia', items: Math.round(dashboardData.total_stock * 0.85).toLocaleString(), percentage: 85 },
-                    { category: 'Stok Menipis', items: Math.round(dashboardData.total_stock * 0.1).toLocaleString(), percentage: 10 },
-                    { category: 'Habis', items: Math.round(dashboardData.total_stock * 0.05).toLocaleString(), percentage: 5 }
+                    { category: 'Tersedia', items: dashboardData.total_stock.toLocaleString(), percentage: 85 },
+                    { category: 'Stok Menipis', items: dashboardData.low_stock_products.toLocaleString(), percentage: Math.round((dashboardData.low_stock_products / dashboardData.total_products) * 100) || 10 },
+                    { category: 'Habis', items: dashboardData.out_of_stock_products.toLocaleString(), percentage: Math.round((dashboardData.out_of_stock_products / dashboardData.total_products) * 100) || 5 }
                 ]
             };
         }
@@ -937,20 +1060,21 @@
                     
                     // Judul Laporan
                     doc.setFontSize(16);
-                    doc.setTextColor(217, 119, 6); // Amber color
+                    doc.setTextColor(139, 69, 19); // Brown color
                     doc.text(exportData.report.title, 20, 65);
                     
                     doc.setFontSize(10);
                     doc.setTextColor(100, 100, 100);
                     doc.text(`Periode: ${exportData.report.period}`, 20, 75);
                     doc.text(`Dibuat: ${exportData.report.generated}`, 20, 82);
+                    doc.text(`Sumber Data: ${dashboardData.data_source}`, 20, 89);
                     
                     // Garis pemisah
-                    doc.setDrawColor(217, 119, 6);
+                    doc.setDrawColor(139, 69, 19);
                     doc.setLineWidth(0.5);
-                    doc.line(20, 85, 190, 85);
+                    doc.line(20, 95, 190, 95);
                     
-                    let yPosition = 100;
+                    let yPosition = 110;
                     
                     // Metrik Utama
                     doc.setFontSize(14);
@@ -964,7 +1088,9 @@
                         ['Pesanan Aktif', exportData.metrics.activeOrders],
                         ['Pengiriman Tertunda', exportData.metrics.pendingShipment],
                         ['Pendapatan Bulanan', exportData.metrics.monthlyRevenue],
-                        ['Nilai Inventori', exportData.metrics.inventoryValue]
+                        ['Nilai Inventori', exportData.metrics.inventoryValue],
+                        ['Stok Menipis', exportData.metrics.lowStockProducts],
+                        ['Stok Habis', exportData.metrics.outOfStockProducts]
                     ];
                     
                     doc.autoTable({
@@ -972,7 +1098,7 @@
                         head: [['Metrik', 'Nilai']],
                         body: metrics,
                         theme: 'grid',
-                        headStyles: { fillColor: [217, 119, 6] },
+                        headStyles: { fillColor: [139, 69, 19] },
                         styles: { fontSize: 10 },
                         margin: { left: 20, right: 20 }
                     });
@@ -996,7 +1122,7 @@
                         head: [['Platform', 'Pesanan', 'Pertumbuhan', 'Persentase']],
                         body: platformData,
                         theme: 'grid',
-                        headStyles: { fillColor: [217, 119, 6] },
+                        headStyles: { fillColor: [139, 69, 19] },
                         styles: { fontSize: 10 },
                         margin: { left: 20, right: 20 }
                     });
@@ -1004,23 +1130,48 @@
                     yPosition = doc.lastAutoTable.finalY + 15;
                     
                     // Pesanan Terbaru
+                    if (exportData.recentOrders.length > 0) {
+                        doc.setFontSize(14);
+                        doc.text('PESANAN TERBARU', 20, yPosition);
+                        yPosition += 10;
+                        
+                        const ordersData = exportData.recentOrders.map(o => [
+                            o.id, 
+                            o.customer, 
+                            `Rp ${o.amount}`,
+                            o.status
+                        ]);
+                        
+                        doc.autoTable({
+                            startY: yPosition,
+                            head: [['ID Pesanan', 'Pelanggan', 'Jumlah', 'Status']],
+                            body: ordersData,
+                            theme: 'grid',
+                            headStyles: { fillColor: [139, 69, 19] },
+                            styles: { fontSize: 10 },
+                            margin: { left: 20, right: 20 }
+                        });
+                        
+                        yPosition = doc.lastAutoTable.finalY + 15;
+                    }
+                    
+                    // Kesehatan Inventori
                     doc.setFontSize(14);
-                    doc.text('PESANAN TERBARU', 20, yPosition);
+                    doc.text('KESEHATAN INVENTORI', 20, yPosition);
                     yPosition += 10;
                     
-                    const ordersData = exportData.recentOrders.map(o => [
-                        o.id, 
-                        o.customer, 
-                        `Rp ${o.amount}`,
-                        o.status
+                    const inventoryData = exportData.inventoryHealth.map(i => [
+                        i.category, 
+                        i.items, 
+                        `${i.percentage}%`
                     ]);
                     
                     doc.autoTable({
                         startY: yPosition,
-                        head: [['ID Pesanan', 'Pelanggan', 'Jumlah', 'Status']],
-                        body: ordersData,
+                        head: [['Kategori', 'Jumlah Item', 'Persentase']],
+                        body: inventoryData,
                         theme: 'grid',
-                        headStyles: { fillColor: [217, 119, 6] },
+                        headStyles: { fillColor: [139, 69, 19] },
                         styles: { fontSize: 10 },
                         margin: { left: 20, right: 20 }
                     });
@@ -1062,6 +1213,7 @@
                         [''],
                         ['Periode', exportData.report.period],
                         ['Dibuat', exportData.report.generated],
+                        ['Sumber Data', dashboardData.data_source],
                         [''],
                         ['METRIK UTAMA'],
                         ['Total Produk', exportData.metrics.totalProducts],
@@ -1070,6 +1222,8 @@
                         ['Pengiriman Tertunda', exportData.metrics.pendingShipment],
                         ['Pendapatan Bulanan', exportData.metrics.monthlyRevenue],
                         ['Nilai Inventori', exportData.metrics.inventoryValue],
+                        ['Stok Menipis', exportData.metrics.lowStockProducts],
+                        ['Stok Habis', exportData.metrics.outOfStockProducts],
                         [''],
                         ['KINERJA PLATFORM'],
                         ['Platform', 'Pesanan', 'Pertumbuhan', 'Persentase']
@@ -1127,19 +1281,28 @@
         // Notification system
         function showNotification(message, type = 'info') {
             const container = document.getElementById('notificationContainer');
+            if (!container) return;
+            
             const notification = document.createElement('div');
             
             const typeStyles = {
-                success: 'bg-emerald-500 text-white',
-                error: 'bg-red-500 text-white',
-                warning: 'bg-amber-500 text-white',
-                info: 'bg-blue-500 text-white'
+                success: 'bg-emerald-500 text-white border border-emerald-600',
+                error: 'bg-red-500 text-white border border-red-600',
+                warning: 'bg-amber-500 text-white border border-amber-600',
+                info: 'bg-blue-500 text-white border border-blue-600'
+            };
+            
+            const icons = {
+                success: 'bx-check-circle',
+                error: 'bx-error',
+                warning: 'bx-error-alt',
+                info: 'bx-info-circle'
             };
             
             notification.className = `px-4 py-3 rounded-lg shadow-lg transform translate-x-full opacity-0 transition-all duration-300 ${typeStyles[type]}`;
             notification.innerHTML = `
                 <div class="flex items-center">
-                    <i class='bx ${getNotificationIcon(type)} mr-2'></i>
+                    <i class='bx ${icons[type]} mr-2'></i>
                     <span class="text-sm font-medium">${message}</span>
                     <button onclick="this.parentElement.parentElement.remove()" class="ml-4 text-white hover:text-gray-200">
                         <i class='bx bx-x'></i>
@@ -1165,16 +1328,6 @@
             }, 5000);
         }
 
-        function getNotificationIcon(type) {
-            const icons = {
-                success: 'bx-check-circle',
-                error: 'bx-error',
-                warning: 'bx-error-alt',
-                info: 'bx-info-circle'
-            };
-            return icons[type] || 'bx-info-circle';
-        }
-
         // Keyboard shortcuts
         document.addEventListener('keydown', function(e) {
             // Ctrl/Cmd + R to refresh all data
@@ -1183,10 +1336,9 @@
                 refreshAllData();
             }
             
-            // F5 to refresh
-            if (e.key === 'F5') {
-                e.preventDefault();
-                refreshAllData();
+            // Escape to close modal
+            if (e.key === 'Escape') {
+                hideExportModal();
             }
         });
 
