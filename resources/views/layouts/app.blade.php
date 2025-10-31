@@ -3,9 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
     <title>@yield('title', 'Butik Solo Jala Buana')</title>
     <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+        <meta name="csrf-token" content="{{ csrf_token() }}">
     <style>
         .nav-item.active {
             background-color: #FEF7E6;
@@ -38,11 +41,11 @@
                 <h1 class="text-xl font-display font-bold text-primary">Camellia Boutique99</h1>
                 <p class="text-xs text-gray-600 mt-1">ERP Management System</p>
             </div>
-            
+<input type="hidden" id="csrf-token-input" value="{{ csrf_token() }}">
             <!-- Navigation Menu -->
             <ul class="space-y-2 flex-1">
                 <li>
-                    <a href="{{ route('dashboard_menu') }}" 
+                    <a href="{{ route('dashboard.index') }}" 
                        class="nav-item flex items-center px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg transition-all duration-300"
                        data-route="dashboard">
                        <i class='bx bx-home text-lg mr-3'></i>
@@ -96,6 +99,12 @@
     <main class="lg:ml-64 min-h-screen">
         @yield('content')
     </main>
+
+        <script>
+        // Set CSRF token untuk Axios (jika digunakan)
+        window.csrfToken = "{{ csrf_token() }}";
+        console.log('🛡️ CSRF Token loaded:', window.csrfToken ? 'Yes' : 'No');
+    </script>
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {

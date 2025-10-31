@@ -9,135 +9,126 @@ use Illuminate\Support\Facades\Http;
 
 class Authtentication
 {
+    private const AUTH_BASE = 'https://auth.tiktok-shops.com';
+
+    private const TOKEN_GET_PATH = '/api/v2/token/get';
+
+    private const TOKEN_REFRESH_PATH = '/api/v2/token/refresh';
+
     /**
-     * Get TikTok access token
-     *
-     * @return string|null
-     *
-     * @throws Exception
+     * Ambil access token valid.
+     * - Kalau masih hidup, langsung pakai.
+     * - Kalau hampir/before expired, REFRESH pakai refresh_token.
+     * - Kalau belum punya refresh_token (first link), tukar authorization_code sekali.
      */
-    public static function getTikTokAccessToken()
+    public static function getTikTokAccessToken(): string
     {
-        // 1. Cek apakah di database ada key access-token
-        $accessTokenSetting = Setting::where('key', 'tiktok-access-token')->first();
+        $accessToken = Setting::where('key', 'tiktok-access-token')->value('value');
+        $expiresAtStr = Setting::where('key', 'tiktok-expired-access-token')->value('value');
+        $refreshToken = Setting::where('key', 'tiktok-refresh-token')->value('value');
 
-        if ($accessTokenSetting) {
-            // 2. Jika ada, cek apakah sudah expired
-            $expiredSetting = Setting::where('key', 'tiktok-expired-access-token')->first();
-
-            if ($expiredSetting) {
-                $expiredAt = Carbon::parse($expiredSetting->value);
-
-                // 3. Jika belum expired, return tokennya
-                if ($expiredAt->isFuture()) {
-                    return $accessTokenSetting->value;
-                }
+        // Masih valid > 2 menit buffer
+        if ($accessToken && $expiresAtStr) {
+            $expiresAt = Carbon::parse($expiresAtStr);
+            if ($expiresAt->gt(now()->addSeconds(120))) {
+                return $accessToken;
             }
         }
 
-        // 4. Jika belum ada atau sudah expired, ambil dari API
-        return self::refreshTikTokAccessToken();
+        // Punya refresh token? Refresh, jangan tukar auth_code lagi
+        if ($refreshToken) {
+            return self::refreshTikTokAccessToken();
+        }
+
+        // First link: tukar authorization_code sekali
+        return self::exchangeAuthorizationCodeOnce();
     }
 
     /**
-     * Refresh TikTok access token from API
-     *
-     * @return string|null
-     *
-     * @throws Exception
+     * FIRST LINK ONLY: tukar authorization_code -> access_token.
+     * Setelah ini, simpan refresh_token dan jangan panggil ini lagi kecuali re-link manual.
      */
-    private static function refreshTikTokAccessToken()
+    private static function exchangeAuthorizationCodeOnce(): string
     {
-        try {
-            // Ambil parameter dari database
-            $appKey = Setting::where('key', 'tiktok-app-key')->first();
-            $appSecret = Setting::where('key', 'tiktok-app-secret')->first();
-            $authCode = Setting::where('key', 'tiktok-auth-code')->first();
+        $appKey = Setting::where('key', 'tiktok-app-key')->value('value');
+        $appSecret = Setting::where('key', 'tiktok-app-secret')->value('value');
+        $authCode = Setting::where('key', 'tiktok-auth-code')->value('value');
 
-            if (! $appKey || ! $appSecret || ! $authCode) {
-                throw new Exception('TikTok credentials not found in settings');
-            }
+        if (! $appKey || ! $appSecret || ! $authCode) {
+            throw new Exception('TikTok credentials not found in settings');
+        }
 
-            // Call TikTok API menggunakan Laravel HTTP Client
-            $response = Http::withHeaders([
-                'content-type' => 'application/json',
-            ])->get('https://auth.tiktok-shops.com/api/v2/token/get', [
-                'app_key' => $appKey->value,
-                'app_secret' => $appSecret->value,
-                'auth_code' => $authCode->value,
-                'grant_type' => 'authorized_code',
+        // grant_type yang benar: authorization_code (bukan authorized_code)
+        $response = Http::withHeaders(['Content-Type' => 'application/json'])
+            ->timeout(30)
+            ->get(self::AUTH_BASE . self::TOKEN_GET_PATH, [
+                'app_key' => $appKey,
+                'app_secret' => $appSecret,
+                'auth_code' => $authCode,
+                'grant_type' => 'authorization_code',
             ]);
 
-            if ($response->successful()) {
-                $data = $response->json();
+        $data = $response->json();
+        if (! $response->successful() || (($data['code'] ?? -1) !== 0)) {
+            $msg = $data['message'] ?? $response->body();
+            throw new Exception('TikTok API error (code exchange): ' . $msg);
+        }
 
-                // Cek response code dari TikTok
-                if (isset($data['code']) && $data['code'] === 0 && isset($data['data']['access_token'])) {
-                    $responseData = $data['data'];
+        $payload = $data['data'] ?? [];
+        self::persistTokensFromPayload($payload);
 
-                    // Simpan access token ke database
-                    Setting::updateOrCreate(
-                        ['key' => 'tiktok-access-token'],
-                        ['value' => $responseData['access_token']]
-                    );
+        $token = $payload['access_token'] ?? null;
+        if (! $token) {
+            throw new Exception('TikTok API: access_token missing after code exchange');
+        }
 
-                    // Simpan expired time (expire_in adalah timestamp unix)
-                    if (isset($responseData['access_token_expire_in'])) {
-                        $expiredAt = Carbon::createFromTimestamp($responseData['access_token_expire_in']);
-                        Setting::updateOrCreate(
-                            ['key' => 'tiktok-expired-access-token'],
-                            ['value' => $expiredAt->toDateTimeString()]
-                        );
-                    }
+        return $token;
+    }
 
-                    // Simpan refresh token
-                    if (isset($responseData['refresh_token'])) {
-                        Setting::updateOrCreate(
-                            ['key' => 'tiktok-refresh-token'],
-                            ['value' => $responseData['refresh_token']]
-                        );
-                    }
+    /**
+     * REFRESH TOKEN FLOW (yang semestinya dipakai harian).
+     * Menggunakan refresh_token yang disimpan.
+     */
+    private static function refreshTikTokAccessToken(): string
+    {
+        try {
+            $appKey = Setting::where('key', 'tiktok-app-key')->value('value');
+            $appSecret = Setting::where('key', 'tiktok-app-secret')->value('value');
+            $refreshToken = Setting::where('key', 'tiktok-refresh-token')->value('value');
 
-                    // Simpan refresh token expired time
-                    if (isset($responseData['refresh_token_expire_in'])) {
-                        $refreshExpiredAt = Carbon::createFromTimestamp($responseData['refresh_token_expire_in']);
-                        Setting::updateOrCreate(
-                            ['key' => 'tiktok-refresh-token-expired'],
-                            ['value' => $refreshExpiredAt->toDateTimeString()]
-                        );
-                    }
-
-                    // Simpan informasi seller
-                    if (isset($responseData['open_id'])) {
-                        Setting::updateOrCreate(
-                            ['key' => 'tiktok-open-id'],
-                            ['value' => $responseData['open_id']]
-                        );
-                    }
-
-                    if (isset($responseData['seller_name'])) {
-                        Setting::updateOrCreate(
-                            ['key' => 'tiktok-seller-name'],
-                            ['value' => $responseData['seller_name']]
-                        );
-                    }
-
-                    if (isset($responseData['seller_base_region'])) {
-                        Setting::updateOrCreate(
-                            ['key' => 'tiktok-seller-region'],
-                            ['value' => $responseData['seller_base_region']]
-                        );
-                    }
-
-                    return $responseData['access_token'];
-                }
-
-                // Jika ada error dari TikTok API
-                $errorMessage = $data['message'] ?? 'Unknown error';
-                throw new Exception('TikTok API error: ' . $errorMessage);
+            if (! $appKey || ! $appSecret || ! $refreshToken) {
+                throw new Exception('TikTok credentials not found in settings for refresh flow');
             }
 
-            throw new Exception('Failed to get TikTok access token: ' . $response->body());
+            $response = Http::withHeaders(['Content-Type' => 'application/json'])
+                ->timeout(30)
+                ->get(self::AUTH_BASE . self::TOKEN_REFRESH_PATH, [
+                    'app_key' => $appKey,
+                    'app_secret' => $appSecret,
+                    'grant_type' => 'refresh_token',
+                    'refresh_token' => $refreshToken,
+                ]);
+
+            $data = $response->json();
+
+            if (! $response->successful()) {
+                throw new Exception('Failed to refresh token: HTTP ' . $response->status() . ' ' . $response->body());
+            }
+
+            if (($data['code'] ?? -1) !== 0) {
+                $errorMessage = $data['message'] ?? 'Unknown error';
+                throw new Exception('TikTok API error (refresh): ' . $errorMessage);
+            }
+
+            $payload = $data['data'] ?? [];
+            self::persistTokensFromPayload($payload);
+
+            $token = $payload['access_token'] ?? null;
+            if (! $token) {
+                throw new Exception('TikTok API: access_token missing in refresh response');
+            }
+
+            return $token;
 
         } catch (Exception $e) {
             throw new Exception('Error refreshing TikTok access token: ' . $e->getMessage());
@@ -145,12 +136,66 @@ class Authtentication
     }
 
     /**
-     * Generate TikTok API signature based on official Postman algorithm
-     *
-     * @param  string  $path  API path (e.g., '/product/202309/products/search')
-     * @param  array  $params  Query parameters (without sign and access_token)
-     * @param  string  $body  Request body (JSON string)
-     * @return array ['sign' => signature, 'timestamp' => timestamp]
+     * Simpan token + expiry dengan BENAR.
+     * *_expire_in = durasi detik, bukan timestamp.
+     * *_expire_at (kalau ada) = unix timestamp.
+     */
+    private static function persistTokensFromPayload(array $responseData): void
+    {
+        // Access token
+        if (! empty($responseData['access_token'])) {
+            Setting::updateOrCreate(['key' => 'tiktok-access-token'], [
+                'value' => $responseData['access_token'],
+            ]);
+        }
+
+        // Access token expiry
+        if (isset($responseData['access_token_expire_in'])) {
+            // detik → now + detik, kasih buffer 60s
+            $expiredAt = now()->addSeconds((int) $responseData['access_token_expire_in'] - 60)->toDateTimeString();
+            Setting::updateOrCreate(['key' => 'tiktok-expired-access-token'], [
+                'value' => $expiredAt,
+            ]);
+        } elseif (isset($responseData['access_token_expire_at'])) {
+            // unix ts → langsung
+            $expiredAt = Carbon::createFromTimestamp((int) $responseData['access_token_expire_at'])->subSeconds(60)->toDateTimeString();
+            Setting::updateOrCreate(['key' => 'tiktok-expired-access-token'], [
+                'value' => $expiredAt,
+            ]);
+        }
+
+        // Refresh token + expiry
+        if (isset($responseData['refresh_token'])) {
+            Setting::updateOrCreate(['key' => 'tiktok-refresh-token'], [
+                'value' => $responseData['refresh_token'],
+            ]);
+        }
+        if (isset($responseData['refresh_token_expire_in'])) {
+            $refreshExpiredAt = now()->addSeconds((int) $responseData['refresh_token_expire_in'] - 300)->toDateTimeString(); // buffer 5 menit
+            Setting::updateOrCreate(['key' => 'tiktok-refresh-token-expired'], [
+                'value' => $refreshExpiredAt,
+            ]);
+        } elseif (isset($responseData['refresh_token_expire_at'])) {
+            $refreshExpiredAt = Carbon::createFromTimestamp((int) $responseData['refresh_token_expire_at'])->subMinutes(5)->toDateTimeString();
+            Setting::updateOrCreate(['key' => 'tiktok-refresh-token-expired'], [
+                'value' => $refreshExpiredAt,
+            ]);
+        }
+
+        // Info seller (opsional)
+        if (isset($responseData['open_id'])) {
+            Setting::updateOrCreate(['key' => 'tiktok-open-id'], ['value' => $responseData['open_id']]);
+        }
+        if (isset($responseData['seller_name'])) {
+            Setting::updateOrCreate(['key' => 'tiktok-seller-name'], ['value' => $responseData['seller_name']]);
+        }
+        if (isset($responseData['seller_base_region'])) {
+            Setting::updateOrCreate(['key' => 'tiktok-seller-region'], ['value' => $responseData['seller_base_region']]);
+        }
+    }
+
+    /**
+     * Signature buat product endpoints tetap punyamu (tidak dipakai di auth).
      */
     public static function generateTikTokSignature($path, $params = [], $body = '')
     {
@@ -161,27 +206,16 @@ class Authtentication
         }
 
         $timestamp = time();
-
-        // Add timestamp to params
         $params['timestamp'] = $timestamp;
-
-        // Remove sign and access_token if they exist
-        unset($params['sign']);
-        unset($params['access_token']);
-
-        // Sort parameters by key alphabetically
+        unset($params['sign'], $params['access_token']);
         ksort($params);
 
-        // Build concatenated string: key1value1key2value2...
         $concatenatedParams = '';
         foreach ($params as $key => $value) {
             $concatenatedParams .= $key . $value;
         }
 
-        // Build signature string: secret + path + concatenated_params + body + secret
         $signString = $appSecret->value . $path . $concatenatedParams . $body . $appSecret->value;
-
-        // Generate HMAC SHA256 signature
         $sign = hash_hmac('sha256', $signString, $appSecret->value);
 
         return [
