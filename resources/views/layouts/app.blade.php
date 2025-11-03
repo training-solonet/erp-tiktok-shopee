@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
     <title>@yield('title', 'Butik Solo Jala Buana')</title>
     <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
-        <meta name="csrf-token" content="{{ csrf_token() }}">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <style>
+        /* Desktop Sidebar Active State */
         .nav-item.active {
             background-color: #FEF7E6;
             color: #8B4513;
@@ -19,6 +19,30 @@
         .nav-item.active i {
             color: #8B4513;
         }
+
+        /* Mobile Bottom Navigation Active State */
+        .bottom-nav-item.active {
+            color: #8B4513;
+            font-weight: 600;
+            position: relative;
+        }
+        .bottom-nav-item.active i {
+            color: #8B4513;
+            transform: scale(1.1);
+        }
+        .bottom-nav-item.active::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 4px;
+            height: 4px;
+            background-color: #8B4513;
+            border-radius: 50%;
+        }
+
+        /* Smooth transitions */
         html {
             scroll-behavior: smooth;
         }
@@ -28,20 +52,38 @@
         .text-primary { color: #8B4513; }
         .border-primary { border-color: #8B4513; }
         .hover\:bg-primary:hover { background-color: #654321; }
-        .from-primary { --tw-gradient-from: #8B4513; }
-        .to-primary-600 { --tw-gradient-to: #654321; }
+
+        /* Optimized for mobile interaction */
+        .bottom-nav-item {
+            transition: all 0.2s ease-in-out;
+            padding: 8px 12px;
+            border-radius: 8px;
+        }
+        .bottom-nav-item:active {
+            background-color: #FEF7E6;
+            transform: scale(0.95);
+        }
+
+        /* Safe area for notched devices */
+        @supports(padding: max(0px)) {
+            .bottom-nav {
+                padding-bottom: max(1rem, env(safe-area-inset-bottom));
+            }
+        }
     </style>
 </head>
 <body class="bg-gray-50">
-    <!-- Sidebar Navigation -->
-    <nav id="sidebar" class="fixed left-0 top-0 h-screen w-64 bg-white shadow-xl z-50 transform -translate-x-full lg:translate-x-0 transition-transform duration-300 border-r border-gray-200">
+    <!-- Desktop Sidebar Navigation -->
+    <nav id="sidebar" class="fixed left-0 top-0 h-screen w-64 bg-white shadow-xl z-40 transform -translate-x-full lg:translate-x-0 transition-transform duration-300 border-r border-gray-200">
         <div class="p-6 h-full flex flex-col">
             <!-- Logo Section -->
             <div class="mb-8">
                 <h1 class="text-xl font-display font-bold text-primary">Camellia Boutique99</h1>
                 <p class="text-xs text-gray-600 mt-1">ERP Management System</p>
             </div>
-<input type="hidden" id="csrf-token-input" value="{{ csrf_token() }}">
+
+            <input type="hidden" id="csrf-token-input" value="{{ csrf_token() }}">
+
             <!-- Navigation Menu -->
             <ul class="space-y-2 flex-1">
                 <li>
@@ -68,6 +110,14 @@
                        <span class="font-medium">Orders</span>
                     </a>
                 </li>
+                {{-- <li>
+                    <a href="/" 
+                       class="nav-item flex items-center px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg transition-all duration-300"
+                       data-route="account">
+                       <i class='bx bx-user text-lg mr-3'></i>
+                       <span class="font-medium">Account</span>
+                    </a>
+                </li> --}}
             </ul>
             
             <!-- User Section -->
@@ -88,90 +138,114 @@
         </div>
     </nav>
 
-    <!-- Mobile Menu Button -->
-    <div class="lg:hidden fixed top-4 left-4 z-50">
-        <button id="mobileMenuButton" class="p-2 bg-white rounded-lg shadow-lg hover:shadow-xl transition-shadow">
-            <i class='bx bx-menu text-xl text-primary'></i>
-        </button>
-    </div>
+    <!-- Mobile Bottom Navigation -->
+    <nav id="bottomNav" class="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50 shadow-lg">
+        <div class="flex justify-around items-center p-3">
+            <a href="{{ route('dashboard.index') }}" 
+               class="bottom-nav-item flex flex-col items-center justify-center text-gray-600 transition-all duration-300 w-16"
+               data-route="dashboard">
+               <i class='bx bx-home text-xl mb-1'></i>
+               <span class="text-xs font-medium">Dashboard</span>
+            </a>
+            <a href="{{ route('products_menu') }}" 
+               class="bottom-nav-item flex flex-col items-center justify-center text-gray-600 transition-all duration-300 w-16"
+               data-route="products">
+               <i class='bx bx-package text-xl mb-1'></i>
+               <span class="text-xs font-medium">Products</span>
+            </a>
+            <a href="{{ route('orders_menu') }}" 
+               class="bottom-nav-item flex flex-col items-center justify-center text-gray-600 transition-all duration-300 w-16"
+               data-route="orders">
+               <i class='bx bx-cart-alt text-xl mb-1'></i>
+               <span class="text-xs font-medium">Orders</span>
+            </a>
+            <a href="#" 
+               class="bottom-nav-item flex flex-col items-center justify-center text-gray-600 transition-all duration-300 w-16"
+               data-route="account">
+               <i class='bx bx-user text-xl mb-1'></i>
+               <span class="text-xs font-medium">Account</span>
+            </a>
+        </div>
+    </nav>
 
     <!-- Main Content -->
-    <main class="lg:ml-64 min-h-screen">
+    <main class="min-h-screen pb-20 lg:pb-0 lg:ml-64">
         @yield('content')
     </main>
 
-        <script>
-        // Set CSRF token untuk Axios (jika digunakan)
+    <script>
+        // Set CSRF token untuk Axios
         window.csrfToken = "{{ csrf_token() }}";
-        console.log('🛡️ CSRF Token loaded:', window.csrfToken ? 'Yes' : 'No');
     </script>
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            const mobileMenuButton = document.getElementById('mobileMenuButton');
-            const sidebar = document.getElementById('sidebar');
+            const bottomNavItems = document.querySelectorAll('.bottom-nav-item');
             const navItems = document.querySelectorAll('.nav-item');
-            
-            // Mobile menu toggle
-            if (mobileMenuButton && sidebar) {
-                mobileMenuButton.addEventListener('click', () => {
-                    sidebar.classList.toggle('-translate-x-full');
-                });
-            }
 
-            // Close mobile menu when clicking on nav items (mobile devices)
-            navItems.forEach(item => {
-                item.addEventListener('click', function() {
-                    if (window.innerWidth < 1024) {
-                        sidebar.classList.add('-translate-x-full');
-                    }
-                });
-            });
-
-            // Handle active state based on current URL
+            // Enhanced active state handler
             function setActiveNav() {
                 const currentPath = window.location.pathname;
                 const currentHash = window.location.hash;
                 
-                console.log('Current Path:', currentPath);
-                console.log('Current Hash:', currentHash);
-                
                 // Reset semua active state
-                navItems.forEach(item => {
-                    item.classList.remove('active');
-                });
+                navItems.forEach(item => item.classList.remove('active'));
+                bottomNavItems.forEach(item => item.classList.remove('active'));
                 
-                // Logic untuk menentukan menu aktif
+                // Determine active route based on current URL
+                let activeRoute = 'dashboard'; // default
+                
                 if (currentPath.includes('/products') || currentHash === '#products') {
-                    // Products page
-                    document.querySelector('[data-route="products"]').classList.add('active');
-                    console.log('Setting active: Products');
+                    activeRoute = 'products';
                 } else if (currentPath.includes('/orders') || currentHash === '#orders') {
-                    // Orders page  
-                    document.querySelector('[data-route="orders"]').classList.add('active');
-                    console.log('Setting active: Orders');
-                } else if (currentPath.includes('/dashboard') || currentPath === '/' || currentHash === '#dashboard' || currentHash === '') {
-                    // Dashboard page (default)
-                    document.querySelector('[data-route="dashboard"]').classList.add('active');
-                    console.log('Setting active: Dashboard');
+                    activeRoute = 'orders';
+                } else if (currentPath.includes('/account') || currentHash === '#account') {
+                    activeRoute = 'account';
+                } else if (currentPath.includes('/dashboard') || currentPath === '/') {
+                    activeRoute = 'dashboard';
                 }
                 
-                // Fallback: Jika tidak ada yang match, set dashboard sebagai default
-                const activeItems = document.querySelectorAll('.nav-item.active');
-                if (activeItems.length === 0) {
-                    document.querySelector('[data-route="dashboard"]').classList.add('active');
-                    console.log('Fallback: Setting active: Dashboard');
-                }
+                // Apply active state to both desktop and mobile navigation
+                const desktopActive = document.querySelector(`.nav-item[data-route="${activeRoute}"]`);
+                const mobileActive = document.querySelector(`.bottom-nav-item[data-route="${activeRoute}"]`);
+                
+                if (desktopActive) desktopActive.classList.add('active');
+                if (mobileActive) mobileActive.classList.add('active');
             }
 
-            // Panggil function saat load
+            // Enhanced touch feedback for mobile
+            bottomNavItems.forEach(item => {
+                item.addEventListener('touchstart', function() {
+                    this.style.transform = 'scale(0.95)';
+                });
+                
+                item.addEventListener('touchend', function() {
+                    this.style.transform = 'scale(1)';
+                });
+            });
+
+            // Handle initial load and URL changes
             setActiveNav();
-            
-            // Juga panggil saat URL berubah (untuk single page application behavior)
             window.addEventListener('popstate', setActiveNav);
-            
-            // Untuk handle hash changes
             window.addEventListener('hashchange', setActiveNav);
+
+            // Optional: Add loading states for better UX
+            bottomNavItems.forEach(item => {
+                item.addEventListener('click', function(e) {
+                    if (this.getAttribute('href') === '#') {
+                        e.preventDefault();
+                    }
+                    
+                    // Add subtle loading feedback
+                    const icon = this.querySelector('i');
+                    const originalClass = icon.className;
+                    icon.className = 'bx bx-loader-alt text-xl mb-1 animate-spin';
+                    
+                    setTimeout(() => {
+                        icon.className = originalClass;
+                    }, 800);
+                });
+            });
         });
     </script>
     
