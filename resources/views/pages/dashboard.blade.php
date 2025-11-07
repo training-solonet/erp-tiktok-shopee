@@ -50,7 +50,13 @@
                 <div class="flex flex-col space-y-2 mt-4 lg:mt-0">
                     <div class="flex items-center space-x-2 bg-white/10 backdrop-blur-sm rounded-lg px-3 py-1.5 border border-white/15">
                         <div class="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse"></div>
-                        <span class="text-xs font-medium">Semua Sistem Beroperasi</span>
+                        <span class="text-xs font-medium" id="dataSourceIndicator">
+                            @if($data_source === 'tiktok_api')
+                                Data Real-time TikTok
+                            @else
+                                Data Fallback
+                            @endif
+                        </span>
                     </div>
                     <div class="text-right">
                         <div class="text-xs text-amber-200">Sinkronisasi Terakhir</div>
@@ -131,7 +137,7 @@
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6 mb-8">
             <!-- Left Column -->
             <div class="lg:col-span-2 space-y-4 lg:space-y-6">
-                <!-- Recent Orders - MODERN DESIGN -->
+                <!-- Recent Orders - DESIGN BARU DENGAN INFORMASI LEBIH DETAIL -->
                 <div class="bg-white/80 backdrop-blur-sm rounded-xl shadow-sm border border-gray-100/80 overflow-hidden hover:shadow-md transition-all duration-300">
                     <div class="px-4 lg:px-5 py-3 border-b border-gray-100 bg-gradient-to-r from-gray-50/50 to-white/50">
                         <div class="flex items-center justify-between">
@@ -155,31 +161,90 @@
                         <div class="space-y-3" id="ordersContainer">
                             @if(count($recent_orders) > 0)
                                 @foreach($recent_orders as $order)
-                                <div class="flex items-center justify-between p-3 bg-gray-50/50 rounded-lg hover:bg-amber-50/50 transition-all duration-200 border border-gray-200/30 group hover:border-amber-200/50 hover:shadow-sm backdrop-blur-sm">
-                                    <div class="flex items-center space-x-3 flex-1 min-w-0">
-                                        <div class="w-8 h-8 bg-white rounded-lg border border-gray-200 flex items-center justify-center shadow-xs group-hover:shadow-sm transition-all">
-                                            <i class='bx bx-receipt text-amber-500 text-xs'></i>
+                                @php
+                                    // Process data untuk tampilan yang lebih detail
+                                    $orderId = $order['id'] ?? 'N/A';
+                                    $shortOrderId = 'ORD-' . substr($orderId, -6);
+                                    $customerName = $order['recipient_address']['name'] ?? 'Pelanggan';
+                                    $maskedCustomer = substr($customerName, 0, 1) . '***' . substr($customerName, -1);
+                                    
+                                    // Ambil informasi produk
+                                    $productName = 'Tidak ada produk';
+                                    $productImage = null;
+                                    $itemCount = 0;
+                                    
+                                    if (isset($order['line_items']) && is_array($order['line_items']) && count($order['line_items']) > 0) {
+                                        $firstItem = $order['line_items'][0];
+                                        $productName = $firstItem['product_name'] ?? 'Produk';
+                                        $productImage = $firstItem['sku_image'] ?? null;
+                                        $itemCount = count($order['line_items']);
+                                        
+                                        // Potong nama produk jika terlalu panjang
+                                        if (strlen($productName) > 25) {
+                                            $productName = substr($productName, 0, 25) . '...';
+                                        }
+                                    }
+                                    
+                                    // Format amount
+                                    $totalAmount = $order['payment']['total_amount'] ?? 0;
+                                    $formattedAmount = 'Rp ' . number_format($totalAmount, 0, ',', '.');
+                                    
+                                    // Status mapping
+                                    $status = $order['status'] ?? 'unknown';
+                                    $statusConfig = [
+                                        'completed' => ['class' => 'bg-emerald-100 text-emerald-800 border-emerald-200', 'icon' => 'bx-check', 'text' => 'Selesai'],
+                                        'processing' => ['class' => 'bg-blue-100 text-blue-800 border-blue-200', 'icon' => 'bx-cog', 'text' => 'Proses'],
+                                        'pending' => ['class' => 'bg-amber-100 text-amber-800 border-amber-200', 'icon' => 'bx-time', 'text' => 'Tertunda'],
+                                        'cancelled' => ['class' => 'bg-red-100 text-red-800 border-red-200', 'icon' => 'bx-x', 'text' => 'Dibatalkan']
+                                    ];
+                                    
+                                    $statusInfo = $statusConfig[$status] ?? ['class' => 'bg-gray-100 text-gray-800 border-gray-200', 'icon' => 'bx-question-mark', 'text' => 'Tidak Diketahui'];
+                                @endphp
+                                
+                                <div class="p-3 bg-gray-50/50 rounded-lg hover:bg-amber-50/50 transition-all duration-200 border border-gray-200/30 group hover:border-amber-200/50 hover:shadow-sm backdrop-blur-sm">
+                                    <div class="flex items-start space-x-3">
+                                        <!-- Gambar Produk -->
+                                        <div class="flex-shrink-0">
+                                            @if($productImage)
+                                            <div class="w-12 h-12 bg-gray-100 rounded-lg border border-gray-200 overflow-hidden shadow-xs group-hover:shadow-sm transition-all">
+                                                <img src="{{ $productImage }}" alt="{{ $productName }}" 
+                                                     class="w-full h-full object-cover hover:scale-105 transition-transform duration-300">
+                                            </div>
+                                            @else
+                                            <div class="w-12 h-12 bg-gradient-to-br from-amber-500 to-amber-600 rounded-lg border border-amber-200 flex items-center justify-center shadow-xs group-hover:shadow-sm transition-all">
+                                                <i class='bx bx-package text-white text-sm'></i>
+                                            </div>
+                                            @endif
                                         </div>
+                                        
+                                        <!-- Informasi Pesanan -->
                                         <div class="flex-1 min-w-0">
-                                            <h4 class="font-medium text-gray-800 text-xs truncate">{{ $order['id'] }}</h4>
-                                            <p class="text-xs text-gray-600 truncate">{{ $order['recipient_address']['name'] ?? 'Pelanggan' }}</p>
+                                            <div class="flex items-start justify-between mb-1">
+                                                <div class="flex-1 min-w-0">
+                                                    <h4 class="font-semibold text-gray-800 text-sm truncate">{{ $shortOrderId }}</h4>
+                                                    <p class="text-xs text-gray-600 truncate">{{ $maskedCustomer }}</p>
+                                                </div>
+                                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium {{ $statusInfo['class'] }} border ml-2">
+                                                    <i class='bx {{ $statusInfo['icon'] }} mr-0.5 text-xs'></i>
+                                                    {{ $statusInfo['text'] }}
+                                                </span>
+                                            </div>
+                                            
+                                            <p class="text-xs text-gray-700 mb-1 truncate">{{ $productName }}</p>
+                                            
+                                            <div class="flex items-center justify-between">
+                                                <div class="flex items-center space-x-2 text-xs text-gray-500">
+                                                    <span class="flex items-center bg-white px-1.5 py-0.5 rounded border border-gray-200">
+                                                        <i class='bx bx-package mr-0.5 text-xs'></i>
+                                                        {{ $itemCount }} item
+                                                    </span>
+                                                    <span class="text-xs text-gray-400">
+                                                        {{ \Carbon\Carbon::createFromTimestamp($order['create_time'] ?? time())->diffForHumans() }}
+                                                    </span>
+                                                </div>
+                                                <span class="font-bold text-gray-900 text-sm">{{ $formattedAmount }}</span>
+                                            </div>
                                         </div>
-                                    </div>
-                                    <div class="text-right ml-2">
-                                        <span class="font-semibold text-gray-900 block text-xs">Rp {{ number_format($order['payment']['total_amount'] ?? 0, 0, ',', '.') }}</span>
-                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium status-badge 
-                                            @if(($order['status'] ?? '') === 'completed') bg-emerald-100 text-emerald-800 border border-emerald-200
-                                            @elseif(($order['status'] ?? '') === 'processing') bg-blue-100 text-blue-800 border border-blue-200
-                                            @elseif(($order['status'] ?? '') === 'pending') bg-amber-100 text-amber-800 border border-amber-200
-                                            @else bg-gray-100 text-gray-800 border border-gray-200 @endif">
-                                            @if(($order['status'] ?? '') === 'completed') 
-                                                <i class='bx bx-check mr-0.5 text-xs'></i>Selesai
-                                            @elseif(($order['status'] ?? '') === 'processing') 
-                                                <i class='bx bx-cog mr-0.5 text-xs'></i>Proses
-                                            @elseif(($order['status'] ?? '') === 'pending') 
-                                                <i class='bx bx-time mr-0.5 text-xs'></i>Tertunda
-                                            @else Tidak Diketahui @endif
-                                        </span>
                                     </div>
                                 </div>
                                 @endforeach
@@ -306,9 +371,9 @@
                         <div class="space-y-3">
                             @php
                                 $inventoryItems = [
-                                    ['label' => 'Stok Tersedia', 'value' => $total_stock, 'percentage' => 85, 'color' => 'emerald', 'gradient' => 'from-emerald-500 to-emerald-600'],
-                                    ['label' => 'Stok Rendah', 'value' => $low_stock_products, 'percentage' => $total_products > 0 ? ($low_stock_products / $total_products) * 100 : 0, 'color' => 'amber', 'gradient' => 'from-amber-500 to-amber-600'],
-                                    ['label' => 'Stok Habis', 'value' => $out_of_stock_products, 'percentage' => $total_products > 0 ? ($out_of_stock_products / $total_products) * 100 : 0, 'color' => 'red', 'gradient' => 'from-red-500 to-red-600']
+                                    ['label' => 'Stok Tersedia', 'value' => $total_stock, 'percentage' => $total_products > 0 ? min(85, ($total_stock / ($total_stock + $low_stock_products + $out_of_stock_products)) * 100) : 0, 'color' => 'emerald', 'gradient' => 'from-emerald-500 to-emerald-600'],
+                                    ['label' => 'Stok Rendah', 'value' => $low_stock_products, 'percentage' => $total_products > 0 ? min(15, ($low_stock_products / $total_products) * 100) : 0, 'color' => 'amber', 'gradient' => 'from-amber-500 to-amber-600'],
+                                    ['label' => 'Stok Habis', 'value' => $out_of_stock_products, 'percentage' => $total_products > 0 ? min(10, ($out_of_stock_products / $total_products) * 100) : 0, 'color' => 'red', 'gradient' => 'from-red-500 to-red-600']
                                 ];
                             @endphp
 
@@ -319,7 +384,7 @@
                                     <span class="font-semibold">{{ number_format($item['value']) }} item</span>
                                 </div>
                                 <div class="w-full bg-gray-200 rounded-full h-1.5 overflow-hidden">
-                                    <div class="bg-gradient-to-r {{ $item['gradient'] }} h-1.5 rounded-full transition-all duration-1000 group-hover:shadow-sm" 
+                                    <div class="bg-gradient-to-r {{ $item['gradient'] }} h-1.5 rounded-full transition-all duration-1000 group-hover:shadow-sm inventory-bar" 
                                          style="width: {{ $item['percentage'] }}%"></div>
                                 </div>
                             </div>
@@ -584,6 +649,24 @@
     function initializeDashboard() {
         updateDateTime();
         setInterval(updateDateTime, 1000);
+        
+        // Update data source indicator
+        updateDataSourceIndicator('{{ $data_source }}');
+    }
+
+    function updateDataSourceIndicator(dataSource) {
+        const statusElement = document.querySelector('.bg-emerald-400');
+        const indicatorText = document.getElementById('dataSourceIndicator');
+        
+        if (statusElement && indicatorText) {
+            if (dataSource === 'tiktok_api') {
+                statusElement.className = 'w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse';
+                indicatorText.textContent = 'Data Real-time TikTok';
+            } else {
+                statusElement.className = 'w-1.5 h-1.5 bg-amber-400 rounded-full animate-pulse';
+                indicatorText.textContent = 'Data Fallback';
+            }
+        }
     }
 
     function updateDateTime() {
@@ -664,12 +747,14 @@
             
             if (result.success) {
                 updateDashboardUI(result.data);
+                updateDataSourceIndicator('tiktok_api');
                 showNotification('Dasbor berhasil diperbarui', 'success');
             } else {
                 throw new Error(result.error || 'Gagal menyegarkan data');
             }
         } catch (error) {
             console.error('Refresh error:', error);
+            updateDataSourceIndicator('fallback');
             showNotification('Gagal memperbarui data', 'error');
         }
     }
@@ -695,12 +780,14 @@
             
             if (result.success) {
                 updateDashboardUI(result.data);
+                updateDataSourceIndicator('tiktok_api');
                 showNotification(`Data ${typeLabels[type]} berhasil diperbarui`, 'success');
             } else {
                 throw new Error(result.error || `Gagal menyegarkan ${typeLabels[type]}`);
             }
         } catch (error) {
             console.error(`Refresh ${type} error:`, error);
+            updateDataSourceIndicator('fallback');
             showNotification(`Gagal memperbarui ${typeLabels[type]}`, 'error');
         }
     }
@@ -731,6 +818,7 @@
 
             if (result.success && result.data.recent_orders) {
                 updateOrdersList(result.data.recent_orders);
+                updateDataSourceIndicator('tiktok_api');
                 showNotification('Pesanan berhasil disegarkan', 'success');
             } else {
                 throw new Error('Tidak ada data pesanan yang diterima');
@@ -739,18 +827,34 @@
             console.error('Refresh orders error:', error);
             loading.classList.add('hidden');
             container.classList.remove('hidden');
+            updateDataSourceIndicator('fallback');
             showNotification('Gagal memuat pesanan', 'error');
         }
     }
 
     function updateDashboardUI(data) {
         // Update metrics cards
-        if (data.total_products !== undefined) {
-            document.querySelector('[onclick="refreshMetrics(\'products\')"] .text-lg').textContent = data.total_products.toLocaleString();
+        const metricCards = document.querySelectorAll('.metric-card');
+        
+        if (data.total_products !== undefined && metricCards[0]) {
+            metricCards[0].querySelector('.text-lg').textContent = data.total_products.toLocaleString();
+            metricCards[0].querySelector('.text-xs').textContent = data.active_products + ' aktif';
         }
-        if (data.active_orders !== undefined) {
-            document.querySelector('[onclick="refreshMetrics(\'orders\')"] .text-lg').textContent = data.active_orders.toLocaleString();
+        
+        if (data.inventory_value !== undefined && metricCards[1]) {
+            metricCards[1].querySelector('.text-lg').textContent = 'Rp ' + formatNumber(data.inventory_value);
+            metricCards[1].querySelector('.text-xs').textContent = data.total_stock + ' item';
         }
+        
+        if (data.active_orders !== undefined && metricCards[2]) {
+            metricCards[2].querySelector('.text-lg').textContent = data.active_orders.toLocaleString();
+            metricCards[2].querySelector('.text-xs').textContent = data.pending_shipment + ' tertunda';
+        }
+        
+        if (data.monthly_revenue !== undefined && metricCards[3]) {
+            metricCards[3].querySelector('.text-lg').textContent = 'Rp ' + formatNumber(data.monthly_revenue);
+        }
+        
         if (data.recent_orders) {
             updateOrdersList(data.recent_orders);
         }
@@ -759,13 +863,55 @@
         const now = new Date();
         document.getElementById('lastSyncTime').textContent = now.toLocaleString('id-ID');
         document.getElementById('lastSyncHeader').textContent = now.toLocaleString('id-ID');
+        
+        // Update inventory health
+        updateInventoryHealth(data);
+    }
+
+    function updateInventoryHealth(data) {
+        if (data.total_products && data.low_stock_products !== undefined && data.out_of_stock_products !== undefined) {
+            const inventoryItems = [
+                { 
+                    label: 'Stok Tersedia', 
+                    value: data.total_stock, 
+                    percentage: Math.min(85, (data.total_stock / (data.total_stock + data.low_stock_products + data.out_of_stock_products)) * 100) 
+                },
+                { 
+                    label: 'Stok Rendah', 
+                    value: data.low_stock_products, 
+                    percentage: Math.min(15, (data.low_stock_products / data.total_products) * 100) 
+                },
+                { 
+                    label: 'Stok Habis', 
+                    value: data.out_of_stock_products, 
+                    percentage: Math.min(10, (data.out_of_stock_products / data.total_products) * 100) 
+                }
+            ];
+
+            // Update inventory health display
+            const inventoryGroups = document.querySelectorAll('.group');
+            inventoryGroups.forEach((group, index) => {
+                if (inventoryItems[index]) {
+                    const item = inventoryItems[index];
+                    const valueElement = group.querySelector('.font-semibold');
+                    const barElement = group.querySelector('.inventory-bar');
+                    
+                    if (valueElement) {
+                        valueElement.textContent = item.value.toLocaleString() + ' item';
+                    }
+                    if (barElement) {
+                        barElement.style.width = item.percentage + '%';
+                    }
+                }
+            });
+        }
     }
 
     function updateOrdersList(orders) {
         const container = document.getElementById('ordersContainer');
         const noOrders = document.getElementById('noOrders');
         
-        if (orders.length === 0) {
+        if (!orders || orders.length === 0) {
             if (noOrders) noOrders.classList.remove('hidden');
             container.innerHTML = '';
             return;
@@ -775,40 +921,107 @@
         
         let ordersHTML = '';
         orders.forEach(order => {
-            const statusClass = {
-                'completed': 'bg-emerald-100 text-emerald-800 border border-emerald-200',
-                'processing': 'bg-blue-100 text-blue-800 border border-blue-200',
-                'pending': 'bg-amber-100 text-amber-800 border border-amber-200'
-            }[order.status] || 'bg-gray-100 text-gray-800 border border-gray-200';
+            // Process data untuk tampilan yang lebih detail
+            const orderId = order.id || 'N/A';
+            const shortOrderId = 'ORD-' + orderId.slice(-6);
+            const customerName = order.recipient_address?.name || 'Pelanggan';
+            const maskedCustomer = customerName.substring(0, 1) + '***' + customerName.substring(customerName.length - 1);
             
-            const statusText = {
-                'completed': '<i class=\'bx bx-check mr-0.5 text-xs\'></i>Selesai',
-                'processing': '<i class=\'bx bx-cog mr-0.5 text-xs\'></i>Proses',
-                'pending': '<i class=\'bx bx-time mr-0.5 text-xs\'></i>Tertunda'
-            }[order.status] || 'Tidak Diketahui';
+            // Ambil informasi produk
+            let productName = 'Tidak ada produk';
+            let productImage = null;
+            let itemCount = 0;
+            
+            if (order.line_items && Array.isArray(order.line_items) && order.line_items.length > 0) {
+                productName = order.line_items[0].product_name || 'Produk';
+                productImage = order.line_items[0].sku_image || null;
+                itemCount = order.line_items.length;
+                
+                // Potong nama produk jika terlalu panjang
+                if (productName.length > 25) {
+                    productName = productName.substring(0, 25) + '...';
+                }
+            }
+            
+            // Format amount
+            const totalAmount = order.payment?.total_amount || 0;
+            const formattedAmount = 'Rp ' + formatNumber(totalAmount);
+            
+            // Status mapping
+            const status = order.status || 'unknown';
+            const statusConfig = {
+                'completed': {class: 'bg-emerald-100 text-emerald-800 border-emerald-200', icon: 'bx-check', text: 'Selesai'},
+                'processing': {class: 'bg-blue-100 text-blue-800 border-blue-200', icon: 'bx-cog', text: 'Proses'},
+                'pending': {class: 'bg-amber-100 text-amber-800 border-amber-200', icon: 'bx-time', text: 'Tertunda'},
+                'cancelled': {class: 'bg-red-100 text-red-800 border-red-200', icon: 'bx-x', text: 'Dibatalkan'}
+            };
+            
+            const statusInfo = statusConfig[status] || {class: 'bg-gray-100 text-gray-800 border-gray-200', icon: 'bx-question-mark', text: 'Tidak Diketahui'};
+            
+            // Format waktu
+            const orderTime = order.create_time ? new Date(order.create_time * 1000) : new Date();
+            const timeAgo = getTimeAgo(orderTime);
             
             ordersHTML += `
-                <div class="flex items-center justify-between p-3 bg-gray-50/50 rounded-lg hover:bg-amber-50/50 transition-all duration-200 border border-gray-200/30 group hover:border-amber-200/50 hover:shadow-sm backdrop-blur-sm">
-                    <div class="flex items-center space-x-3 flex-1 min-w-0">
-                        <div class="w-8 h-8 bg-white rounded-lg border border-gray-200 flex items-center justify-center shadow-xs group-hover:shadow-sm transition-all">
-                            <i class='bx bx-receipt text-amber-500 text-xs'></i>
+                <div class="p-3 bg-gray-50/50 rounded-lg hover:bg-amber-50/50 transition-all duration-200 border border-gray-200/30 group hover:border-amber-200/50 hover:shadow-sm backdrop-blur-sm">
+                    <div class="flex items-start space-x-3">
+                        <!-- Gambar Produk -->
+                        <div class="flex-shrink-0">
+                            ${productImage ? `
+                            <div class="w-12 h-12 bg-gray-100 rounded-lg border border-gray-200 overflow-hidden shadow-xs group-hover:shadow-sm transition-all">
+                                <img src="${productImage}" alt="${productName}" 
+                                     class="w-full h-full object-cover hover:scale-105 transition-transform duration-300">
+                            </div>
+                            ` : `
+                            <div class="w-12 h-12 bg-gradient-to-br from-amber-500 to-amber-600 rounded-lg border border-amber-200 flex items-center justify-center shadow-xs group-hover:shadow-sm transition-all">
+                                <i class='bx bx-package text-white text-sm'></i>
+                            </div>
+                            `}
                         </div>
+                        
+                        <!-- Informasi Pesanan -->
                         <div class="flex-1 min-w-0">
-                            <h4 class="font-medium text-gray-800 text-xs truncate">${order.id}</h4>
-                            <p class="text-xs text-gray-600 truncate">${order.recipient_address?.name || 'Pelanggan'}</p>
+                            <div class="flex items-start justify-between mb-1">
+                                <div class="flex-1 min-w-0">
+                                    <h4 class="font-semibold text-gray-800 text-sm truncate">${shortOrderId}</h4>
+                                    <p class="text-xs text-gray-600 truncate">${maskedCustomer}</p>
+                                </div>
+                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${statusInfo.class} border ml-2">
+                                    <i class='bx ${statusInfo.icon} mr-0.5 text-xs'></i>
+                                    ${statusInfo.text}
+                                </span>
+                            </div>
+                            
+                            <p class="text-xs text-gray-700 mb-1 truncate">${productName}</p>
+                            
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center space-x-2 text-xs text-gray-500">
+                                    <span class="flex items-center bg-white px-1.5 py-0.5 rounded border border-gray-200">
+                                        <i class='bx bx-package mr-0.5 text-xs'></i>
+                                        ${itemCount} item
+                                    </span>
+                                    <span class="text-xs text-gray-400">${timeAgo}</span>
+                                </div>
+                                <span class="font-bold text-gray-900 text-sm">${formattedAmount}</span>
+                            </div>
                         </div>
-                    </div>
-                    <div class="text-right ml-2">
-                        <span class="font-semibold text-gray-900 block text-xs">Rp ${(order.payment?.total_amount || 0).toLocaleString('id-ID')}</span>
-                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${statusClass}">
-                            ${statusText}
-                        </span>
                     </div>
                 </div>
             `;
         });
         
         container.innerHTML = ordersHTML;
+    }
+
+    function getTimeAgo(date) {
+        const now = new Date();
+        const diffInSeconds = Math.floor((now - date) / 1000);
+        
+        if (diffInSeconds < 60) return 'Baru saja';
+        if (diffInSeconds < 3600) return Math.floor(diffInSeconds / 60) + ' menit lalu';
+        if (diffInSeconds < 86400) return Math.floor(diffInSeconds / 3600) + ' jam lalu';
+        if (diffInSeconds < 2592000) return Math.floor(diffInSeconds / 86400) + ' hari lalu';
+        return Math.floor(diffInSeconds / 2592000) + ' bulan lalu';
     }
 
     function updatePlatformStats() {
@@ -1149,6 +1362,10 @@
                 }
             }, 300);
         }, 4000);
+    }
+
+    function formatNumber(num) {
+        return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
     }
 
     // Keyboard shortcuts
