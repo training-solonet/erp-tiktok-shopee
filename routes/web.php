@@ -16,8 +16,8 @@ Route::get('/', function () {
 // });
 
 Route::resource('products', ProductController::class);
-Route::resource('orders', OrderController::class);
-
+Route::get('/orders', [OrderController::class, 'index'])->name('orders_menu');
+Route::post('/orders/sync', [OrderController::class, 'syncOrders'])->name('orders.sync');
 Route::get('/tiktok/callback', [CallbackController::class, 'handleAuthCallback'])->name('tiktok.callback');
 
 Route::middleware([
@@ -35,9 +35,9 @@ Route::middleware([
 //     return view('pages.products');
 // })->name('products_menu');
 
-Route::get('/orders', function () {
-    return view('pages.orders');
-})->name('orders_menu');
+// Route::get('/orders', function () {
+//     return view('pages.orders');
+// })->name('orders_menu');
 
 // Dashboard Routes
 Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard.index');
