@@ -15,7 +15,7 @@ Route::get('/', function () {
 //     return view('dashboard');
 // });
 
-Route::resource('products', ProductController::class, );
+Route::resource('products', ProductController::class);
 Route::get('/orders', [OrderController::class, 'index'])->name('orders_menu');
 Route::post('/orders/sync', [OrderController::class, 'syncOrders'])->name('orders.sync');
 Route::get('/tiktok/callback', [CallbackController::class, 'handleAuthCallback'])->name('tiktok.callback');

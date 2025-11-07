@@ -2,12 +2,12 @@
 
 namespace App\Http\Controllers;
 
-use Exception;
-use App\Models\Setting;
-use Illuminate\Http\Request;
 use App\Helpers\Authtentication;
-use Illuminate\Support\Facades\Log;
+use App\Models\Setting;
+use Exception;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 class OrderController extends Controller
 {
@@ -24,7 +24,7 @@ class OrderController extends Controller
             $appKey = Setting::where('key', 'tiktok-app-key')->first();
             $shopCipher = Setting::where('key', 'tiktok-shop-cipher')->first();
 
-            if (!$appKey || !$shopCipher) {
+            if (! $appKey || ! $shopCipher) {
                 throw new Exception('TikTok credentials not complete in settings');
             }
 
@@ -63,7 +63,7 @@ class OrderController extends Controller
                 // Check TikTok response code
                 if (isset($data['code']) && $data['code'] === 0) {
                     $orders = $data['data']['orders'] ?? [];
-                    
+
                     // Calculate order metrics - MENGGUNAKAN VERSI YANG SUDAH DIPERBAIKI
                     $orderMetrics = $this->calculateOrderMetrics($orders);
 
@@ -111,7 +111,7 @@ class OrderController extends Controller
             $appKey = Setting::where('key', 'tiktok-app-key')->first();
             $shopCipher = Setting::where('key', 'tiktok-shop-cipher')->first();
 
-            if (!$appKey || !$shopCipher) {
+            if (! $appKey || ! $shopCipher) {
                 throw new Exception('TikTok credentials not complete in settings');
             }
 
@@ -150,10 +150,10 @@ class OrderController extends Controller
                 // Check TikTok response code
                 if (isset($data['code']) && $data['code'] === 0) {
                     $orders = $data['data']['orders'] ?? [];
-                    
+
                     // Calculate order metrics - MENGGUNAKAN VERSI YANG SUDAH DIPERBAIKI
                     $orderMetrics = $this->calculateOrderMetrics($orders);
-                    
+
                     // Format recent orders untuk dashboard
                     $recentOrders = $this->formatOrdersForDashboard($orders);
 
@@ -185,6 +185,7 @@ class OrderController extends Controller
 
         } catch (Exception $e) {
             Log::error('getOrderDataForDashboard Error: ' . $e->getMessage());
+
             return [
                 'success' => false,
                 'error' => $e->getMessage(),
@@ -201,17 +202,17 @@ class OrderController extends Controller
     private function formatOrdersForDashboard($orders)
     {
         $formattedOrders = [];
-        
+
         foreach ($orders as $order) {
             // Format data untuk kompatibilitas dengan tampilan dashboard
             $formattedOrders[] = [
                 'id' => $order['id'] ?? 'N/A',
                 'recipient_address' => [
-                    'name' => $order['recipient_address']['name'] ?? 'Customer'
+                    'name' => $order['recipient_address']['name'] ?? 'Customer',
                 ],
                 // ✅ FIX: Pastikan struktur payment konsisten dengan yang diharapkan view
                 'payment' => [
-                    'total_amount' => $order['payment_info']['total_amount'] ?? 0
+                    'total_amount' => $order['payment_info']['total_amount'] ?? 0,
                 ],
                 // ✅ TAMBAH: Simpan juga payment_info asli untuk backup
                 'payment_info' => $order['payment_info'] ?? [],
@@ -226,7 +227,7 @@ class OrderController extends Controller
                 'tracking_number' => $order['tracking_number'] ?? null,
             ];
         }
-        
+
         return $formattedOrders;
     }
 
@@ -242,9 +243,9 @@ class OrderController extends Controller
             'processed' => 'processing',
             'awaiting_shipment' => 'pending',
             'unpaid' => 'pending',
-            'cancelled' => 'cancelled'
+            'cancelled' => 'cancelled',
         ];
-        
+
         return $statusMap[strtolower($tiktokStatus)] ?? 'unknown';
     }
 
@@ -254,7 +255,7 @@ class OrderController extends Controller
      */
     private function calculateOrderMetrics($orders)
     {
-        if (empty($orders) || !is_array($orders)) {
+        if (empty($orders) || ! is_array($orders)) {
             return $this->getEmptyOrderMetrics();
         }
 
@@ -265,16 +266,18 @@ class OrderController extends Controller
         $totalRevenue = 0; // ✅ Hanya akan diisi dari completed orders
 
         foreach ($orders as $order) {
-            if (!is_array($order)) continue;
-            
+            if (! is_array($order)) {
+                continue;
+            }
+
             $status = strtolower($order['status'] ?? 'unknown');
-            
+
             switch ($status) {
                 case 'unpaid':
                 case 'awaiting_shipment':
                     $pendingOrders++;
                     break;
-                    
+
                 case 'completed':
                 case 'delivered':
                     $completedOrders++;
@@ -282,11 +285,11 @@ class OrderController extends Controller
                     $amount = $this->safeExtractAmount($order);
                     $totalRevenue += $amount;
                     break;
-                    
+
                 case 'cancelled':
                     $cancelledOrders++;
                     break;
-                    
+
                 default:
                     $pendingOrders++;
                     break;
@@ -298,7 +301,7 @@ class OrderController extends Controller
             'total_orders' => $totalOrders,
             'completed_orders' => $completedOrders,
             'total_revenue' => $totalRevenue,
-            'calculation_note' => 'Revenue hanya dari completed/delivered orders'
+            'calculation_note' => 'Revenue hanya dari completed/delivered orders',
         ]);
 
         return [
@@ -322,15 +325,16 @@ class OrderController extends Controller
             if (isset($order['payment_info']['total_amount'])) {
                 return (int) $order['payment_info']['total_amount'];
             }
-            
+
             // Priority 2: payment->total_amount (fallback untuk kompatibilitas)
             if (isset($order['payment']['total_amount'])) {
                 return (int) $order['payment']['total_amount'];
             }
-            
+
             return 0;
         } catch (\Exception $e) {
             Log::warning('Error extracting order amount: ' . $e->getMessage());
+
             return 0;
         }
     }
@@ -364,10 +368,10 @@ class OrderController extends Controller
             $appKey = Setting::where('key', 'tiktok-app-key')->first();
             $shopCipher = Setting::where('key', 'tiktok-shop-cipher')->first();
 
-            if (!$appKey || !$shopCipher) {
+            if (! $appKey || ! $shopCipher) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'TikTok credentials not complete in settings'
+                    'message' => 'TikTok credentials not complete in settings',
                 ], 400);
             }
 
@@ -414,26 +418,26 @@ class OrderController extends Controller
                         'data' => [
                             'orders' => $orders,
                             'metrics' => $orderMetrics,
-                            'total' => $data['data']['total_count'] ?? count($orders)
-                        ]
+                            'total' => $data['data']['total_count'] ?? count($orders),
+                        ],
                     ]);
                 }
 
                 return response()->json([
                     'success' => false,
-                    'message' => $data['message'] ?? 'Unknown error from TikTok API'
+                    'message' => $data['message'] ?? 'Unknown error from TikTok API',
                 ], 400);
             }
 
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to sync orders: ' . $response->body()
+                'message' => 'Failed to sync orders: ' . $response->body(),
             ], 400);
 
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => $e->getMessage()
+                'message' => $e->getMessage(),
             ], 500);
         }
     }

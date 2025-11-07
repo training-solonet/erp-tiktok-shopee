@@ -14,23 +14,23 @@ class DashboardController extends Controller
             $productMetrics = $this->getProductMetricsFromDatabase();
 
             // Ambil data order REAL dan LENGKAP dari OrderController
-            $orderController = new OrderController();
+            $orderController = new OrderController;
             $orderData = $orderController->getOrderDataForDashboard();
-            
+
             // ✅ PERBAIKAN: Gunakan data orders ASLI, bukan yang sudah diformat terbatas
             $rawOrders = $orderData['orders'] ?? []; // Data lengkap dari TikTok API
             $orderMetrics = $orderData['metrics'] ?? $this->getEmptyOrderMetrics();
-            
+
             // ✅ PERBAIKAN: Format data orders untuk dashboard dengan data LENGKAP
             $recentOrders = $this->formatRecentOrdersForDashboard($rawOrders);
-            
+
             // Debug log untuk memastikan data lengkap
             Log::info('Dashboard Data Summary', [
                 'total_products' => $productMetrics['total_products'],
                 'total_orders' => count($rawOrders),
                 'recent_orders_count' => count($recentOrders),
                 'total_revenue' => $orderMetrics['total_revenue'],
-                'data_source' => $orderData['success'] ? 'tiktok_api' : 'api_error'
+                'data_source' => $orderData['success'] ? 'tiktok_api' : 'api_error',
             ]);
 
             return view('pages.dashboard', array_merge($productMetrics, [
@@ -70,43 +70,46 @@ class DashboardController extends Controller
     private function formatRecentOrdersForDashboard($orders): array
     {
         $formattedOrders = [];
-        
+
         // Batasi hanya 5 order terbaru untuk dashboard
         $recentOrders = array_slice($orders, 0, 5);
-        
+
         foreach ($recentOrders as $order) {
-            if (!is_array($order)) continue;
-            
+            if (! is_array($order)) {
+                continue;
+            }
+
             // ✅ AMBIL DATA LENGKAP dari struktur TikTok API
             $orderId = $order['id'] ?? 'N/A';
             $shortOrderId = 'ORD-' . substr($orderId, -6);
             $customerName = $order['recipient_address']['name'] ?? 'Customer';
-            
+
             // ✅ PERBAIKAN: Ambil amount dari berbagai kemungkinan struktur
             $totalAmount = $this->extractOrderAmount($order);
             $formattedAmount = 'Rp ' . number_format($totalAmount, 0, ',', '.');
-            
+
             // ✅ PERBAIKAN: Status mapping yang komprehensif
             $status = strtolower($order['status'] ?? 'unknown');
             $displayStatus = $this->mapOrderStatus($status);
-            
+
             // ✅ PERBAIKAN: Ambil informasi produk LENGKAP
             $productName = 'Tidak ada produk';
             $itemCount = 0;
-            
+
             if (isset($order['line_items']) && is_array($order['line_items']) && count($order['line_items']) > 0) {
                 $firstItem = $order['line_items'][0];
                 $productName = $firstItem['product_name'] ?? 'Produk';
                 $itemCount = count($order['line_items']);
-                
+
                 // Potong nama produk jika terlalu panjang
                 if (strlen($productName) > 30) {
                     $productName = substr($productName, 0, 30) . '...';
                 }
             }
-            
+
             // Format tanggal
             $orderTime = $order['create_time'] ?? time();
+
             try {
                 $formattedTime = \Carbon\Carbon::createFromTimestamp($orderTime)->format('M d, Y H:i');
             } catch (\Exception $e) {
@@ -118,32 +121,32 @@ class DashboardController extends Controller
                 'id' => $orderId,
                 'short_id' => $shortOrderId,
                 'customer_name' => $customerName,
-                
+
                 // ✅ DATA PEMBAYARAN LENGKAP
                 'payment' => [
                     'total_amount' => $totalAmount,
-                    'formatted_amount' => $formattedAmount
+                    'formatted_amount' => $formattedAmount,
                 ],
                 'payment_info' => $order['payment_info'] ?? [],
-                
+
                 // ✅ DATA STATUS LENGKAP
                 'status' => $status,
                 'display_status' => $displayStatus,
                 'create_time' => $orderTime,
                 'formatted_time' => $formattedTime,
-                
+
                 // ✅ DATA PRODUK LENGKAP
                 'product_name' => $productName,
                 'item_count' => $itemCount,
                 'line_items' => $order['line_items'] ?? [],
-                
+
                 // ✅ DATA PENGIRIMAN LENGKAP
                 'shipping_provider' => $order['shipping_provider'] ?? null,
                 'tracking_number' => $order['tracking_number'] ?? null,
                 'recipient_address' => $order['recipient_address'] ?? [],
             ];
         }
-        
+
         return $formattedOrders;
     }
 
@@ -157,12 +160,12 @@ class DashboardController extends Controller
             if (isset($order['payment_info']['total_amount'])) {
                 return (int) $order['payment_info']['total_amount'];
             }
-            
+
             // Priority 2: payment->total_amount
             if (isset($order['payment']['total_amount'])) {
                 return (int) $order['payment']['total_amount'];
             }
-            
+
             // Priority 3: Calculate from line items
             if (isset($order['line_items']) && is_array($order['line_items'])) {
                 $total = 0;
@@ -171,12 +174,14 @@ class DashboardController extends Controller
                     $price = (int) ($item['price'] ?? 0);
                     $total += $quantity * $price;
                 }
+
                 return $total;
             }
-            
+
             return 0;
         } catch (\Exception $e) {
             Log::warning('Error extracting order amount in Dashboard: ' . $e->getMessage());
+
             return 0;
         }
     }
@@ -194,9 +199,9 @@ class DashboardController extends Controller
             'awaiting_shipment' => 'Menunggu Pengiriman',
             'unpaid' => 'Belum Dibayar',
             'cancelled' => 'Dibatalkan',
-            'unknown' => 'Tidak Diketahui'
+            'unknown' => 'Tidak Diketahui',
         ];
-        
+
         return $statusMap[strtolower($tiktokStatus)] ?? 'Tidak Diketahui';
     }
 
@@ -226,6 +231,7 @@ class DashboardController extends Controller
             ];
         } catch (\Exception $e) {
             Log::error('Error getting product metrics: ' . $e->getMessage());
+
             return $this->getEmptyProductMetrics();
         }
     }
@@ -284,15 +290,15 @@ class DashboardController extends Controller
     {
         try {
             $productMetrics = $this->getProductMetricsFromDatabase();
-            
+
             // Ambil data order terbaru dari TikTok API
-            $orderController = new OrderController();
+            $orderController = new OrderController;
             $orderData = $orderController->getOrderDataForDashboard();
-            
+
             // ✅ PERBAIKAN: Gunakan data lengkap
             $rawOrders = $orderData['orders'] ?? [];
             $recentOrders = $this->formatRecentOrdersForDashboard($rawOrders);
-            
+
             $responseData = array_merge($productMetrics, [
                 'active_orders' => $orderData['metrics']['active_orders'] ?? 0,
                 'pending_shipment' => $orderData['metrics']['pending_orders'] ?? 0,
@@ -305,7 +311,7 @@ class DashboardController extends Controller
                 'product_count' => $productMetrics['total_products'],
                 'order_count' => count($rawOrders),
                 'recent_orders_count' => count($recentOrders),
-                'data_source' => $orderData['success'] ? 'tiktok_api' : 'api_error'
+                'data_source' => $orderData['success'] ? 'tiktok_api' : 'api_error',
             ]);
 
             return response()->json([
@@ -333,21 +339,21 @@ class DashboardController extends Controller
         try {
             $request = request();
             $metrics = $request->input('metrics', ['products', 'orders']);
-            
+
             $responseData = [];
-            
+
             if (in_array('products', $metrics)) {
                 $responseData = array_merge($responseData, $this->getProductMetricsFromDatabase());
             }
-            
+
             if (in_array('orders', $metrics)) {
-                $orderController = new OrderController();
+                $orderController = new OrderController;
                 $orderData = $orderController->getOrderDataForDashboard();
-                
+
                 // ✅ PERBAIKAN: Format data orders untuk response
                 $rawOrders = $orderData['orders'] ?? [];
                 $recentOrders = $this->formatRecentOrdersForDashboard($rawOrders);
-                
+
                 $responseData = array_merge($responseData, [
                     'active_orders' => $orderData['metrics']['active_orders'] ?? 0,
                     'pending_shipment' => $orderData['metrics']['pending_orders'] ?? 0,
