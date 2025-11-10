@@ -58,11 +58,16 @@ return [
     */
 
     'features' => [
+
+        Features::profilePhotos(),
+        // (opsional) jika pakai tim
+        // Laravel\Jetstream\Features::teams(['invitations' => true]),
         // Features::termsAndPrivacyPolicy(),
         // Features::profilePhotos(),
         // Features::api(),
         // Features::teams(['invitations' => true]),
         Features::accountDeletion(),
+
     ],
 
     /*

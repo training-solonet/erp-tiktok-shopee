@@ -87,3 +87,7 @@ Route::post('/overview/products/manual-sync', [ProductOverviewController::class,
 // Route yang sudah ada (untuk batch update)
 Route::post('/tiktok/inventory/update', [ProductController::class, 'updateTikTokInventory'])
     ->name('tiktok.inventory.update');
+
+Route::middleware(['auth', 'verified'])->group(function () {
+    Route::view('/user/profile', 'profile.show')->name('profile.show');
+});
